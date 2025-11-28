@@ -31,3 +31,14 @@ CUSTOMER_MESSAGE_LIST_URL = f"{base_url}/customerMessage/{{id}}?expandSubResourc
 
 CUSTOMER_SUBSIDIARY_RELATIONSHIP_ID_URL = f"{base_url}/customerSubsidiaryRelationship"
 CUSTOMER_SUBSIDIARY_RELATIONSHIP_LIST_URL = f"{base_url}/customerSubsidiaryRelationship/{{id}}?expandSubResources=true"
+
+
+INVENTORY_ITEM_ID_URL = f"{base_url}/inventoryItem"
+INVENTORY_ITEM_LIST_URL = f"{base_url}/inventoryItem/{{id}}?expandSubResources=true"
+
+
+INVENTORY_NUMBER_URL = f"{base_url}/inventoryNumber"
+INVENTORY_DETAILS_URL = f"{base_url}/inventoryNumber/{{id}}?expandSubResources=true"
+
+INVENTORY_TRANSFER_ID_URL = f"{base_url}/inventoryTransfer"
+INVENTORY__TRANSFER_DETAILS_URL = f"{base_url}/inventoryTransfer/{{id}}?expandSubResources=true"

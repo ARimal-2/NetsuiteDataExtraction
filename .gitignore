@@ -5,6 +5,6 @@
 /logs/gag_processor
 logs/extraction
 logs/ingestion
-logs/scheduler
+logs
 logs/dag_processor_manager
 /netsuite_venv

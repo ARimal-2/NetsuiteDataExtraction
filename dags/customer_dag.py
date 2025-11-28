@@ -51,7 +51,7 @@ default_args = {
 }
 
 with DAG(
-    dag_id="netsuite_customer_payment_dag",
+    dag_id="netsuite_customer_dag",
     default_args=default_args,
     start_date=datetime(2024, 1, 1),
     schedule="0 */6 * * *",
