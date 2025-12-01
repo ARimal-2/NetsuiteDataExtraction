@@ -34,42 +34,49 @@ from src.s3uploader.connect import connect_to_cos
 
 # logs/ingestionlogger.py
 def setup_logging_for_url(resource_name):
-    today = datetime.now().strftime("%Y%m%d_%H%M%S")
+    from datetime import datetime
+    import os, logging
 
-    # Keep ingestion logs separate from extraction logs for clarity
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     outer_logs_dir = os.path.join("logs", "ingestion", resource_name)
     os.makedirs(outer_logs_dir, exist_ok=True)
 
-    logs_dir = os.path.join(outer_logs_dir, today)
+    logs_dir = os.path.join(outer_logs_dir, timestamp)
     os.makedirs(logs_dir, exist_ok=True)
+    log_file_path = os.path.join(logs_dir, f'{resource_name}.log')
 
-    logger_name = f"ingestion.{resource_name}.{today}"
-    logger = logging.getLogger(logger_name)
+    # Dedicated logger
+    logger = logging.getLogger(f"{resource_name}_{timestamp}")
     logger.setLevel(logging.INFO)
-    logger.propagate = False
 
-    # Remove old handlers to avoid duplicates
-    if logger.handlers:
+    # Remove old handlers
+    if logger.hasHandlers():
         logger.handlers.clear()
 
-    # File handler (safe)
-    log_file = os.path.join(logs_dir, f"{resource_name}.log")
-    fh = logging.FileHandler(log_file, encoding="utf-8")
+    # File handler
+    fh = logging.FileHandler(log_file_path, encoding='utf-8')
     fh.setLevel(logging.INFO)
-    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-    fh.setFormatter(formatter)
+    fh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
     logger.addHandler(fh)
 
-    # Return (outer_logs_dir, logs_dir, logger) to match callers' expectations
+    # Console handler with UTF-8
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    ch.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    ch.stream = open(ch.stream.fileno(), mode='w', encoding='utf-8', buffering=1)
+    logger.addHandler(ch)
+
+    logger.info(f"Logging initialized in {logs_dir}")
     return outer_logs_dir, logs_dir, logger
 
-def save_ingestion_metadata(outer_logs_dir, resource_name,total_count, status, ingestion_date):
+def save_ingestion_metadata(outer_logs_dir, resource_name,total_count, status, ingestion_date,object_key):
     """
     Saves metadata about the ingestion to a JSON file and uploads it to IBM COS.
     """
     metadata_path = os.path.join(outer_logs_dir, f"{resource_name}_metadata.json")
     metadata = {
         "ingestion_date": ingestion_date,
+        "file_path":object_key,
         "status": status,
         "Count":total_count,
         "history": [],
@@ -84,6 +91,7 @@ def save_ingestion_metadata(outer_logs_dir, resource_name,total_count, status, i
                 history = existing_metadata.get("history", [])
                 history.append({
                     "ingestion_date": existing_metadata.get("ingestion_date"),
+                    "file_path":existing_metadata.get("file_path"),
                     "status": existing_metadata.get("status"),
                     "count": existing_metadata.get("Count")
                 })

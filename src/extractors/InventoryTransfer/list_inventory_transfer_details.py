@@ -114,7 +114,7 @@ async def fetch_resource(url, resource_name, transfer_ids):
         None
     )
 
-    return resource_name, all_items, transfer_ids
+    return resource_name, all_items
 
 
 # -------------------------------------------------------

@@ -11,7 +11,8 @@ from src.extractors.utils import (
 from utils.headers import get_netsuite_headers
 from urls import Customer_URL
 
-# -----------------------------
+# --------------------------
+# ---
 # Settings
 # -----------------------------
 MAX_CONCURRENCY = 10           # max parallel requests

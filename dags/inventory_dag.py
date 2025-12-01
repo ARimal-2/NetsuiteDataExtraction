@@ -7,6 +7,7 @@ import os
 import logging
 import tempfile
 from src.s3uploader.upload_to_s3 import fetch_and_upload
+import redis
 
 from src.extractors.InventoryItem.list_inventory_items import list_inventory_items
 from src.extractors.InventoryItem.list_inventory_item_id import list_inventory_item_id
@@ -21,7 +22,7 @@ from src.extractors.InventoryTransfer.list_inventory_transfer_id import list_inv
 from src.extractors.InventoryTransfer.list_inventory_transfer_details import list_inventory_transfer_details
 
 
-
+r = redis.Redis(host="redis", port=6379, db=0)
 logger = logging.getLogger(__name__)
 
 async def safe_upload(data: list, resource_name: str):
@@ -59,17 +60,11 @@ with DAG(
             # extractor returns (resource_name, id_list, resource_data)
             resource_name, id_list, resource_data = asyncio.run(list_inventory_item_id())
 
-            # Write IDs to temp file and push filepath via XCom
-            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as f:
-                json.dump(id_list, f)
-                id_file_path = f.name
-
-            context["ti"].xcom_push(key="inventory_items_ids_file", value=id_file_path)
-            logger.info(f"Wrote {len(id_list)} inventory items IDs to temp file: {id_file_path}")
-
-            # Upload only the ID list (not the full resource_data)
+            if id_list:
+                r.rpush("inventory_items_id_queue", *id_list)
+                print(f"Pushed {len(id_list)} inventory items IDs to Redis queue")
             if resource_data:
-                asyncio.run(safe_upload(resource_data, "inventory_items_ids"))
+                asyncio.run(safe_upload(resource_data, resource_name))
             else:
                 logger.warning("No IDs returned from list_inventory_item_id")
         except Exception as e:
@@ -78,19 +73,14 @@ with DAG(
 
     def fetch_inventory_items_details(**context):
         try:
-            # Pull filepath from XCom and read IDs from temp file
-            id_file_path = context["ti"].xcom_pull(task_ids="list_inventory_items_ids", key="inventory_items_ids_file")
-            if not id_file_path or not os.path.exists(id_file_path):
-                raise ValueError("No inventory items IDs file found")
-            
-            with open(id_file_path, 'r') as f:
-                id_list = json.load(f)
-            
-            logger.info(f"Loaded {len(id_list)} inventory items IDs from temp file: {id_file_path}")
-            if not id_list:
-                raise ValueError("No inventory items IDs found in file")
+            all_ids = []
+            while True:
+                invent_id = r.lpop("inventory_items_id_queue")
+                if invent_id is None:
+                    break
+                all_ids.append(invent_id.decode('utf-8'))
 
-            data = asyncio.run(list_inventory_items(id_list))
+            data = asyncio.run(list_inventory_items(all_ids))
             if data:
                 asyncio.run(safe_upload(data, "inventory_items_details"))
             else:
@@ -118,19 +108,14 @@ with DAG(
         try:
             # extractor returns (resource_name, id_list, resource_data)
             resource_name, id_list, resource_data = asyncio.run(list_inventory_id())
-
-            # Write IDs to temp file and push filepath via XCom
-            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as f:
-                json.dump(id_list, f)
-                id_file_path = f.name
-
-            # XCom key specific to inventory number IDs
-            context["ti"].xcom_push(key="inventory_number_ids_file", value=id_file_path)
-            logger.info(f"Wrote {len(id_list)} inventory number IDs to temp file: {id_file_path}")
+            if id_list:
+                r.rpush("inventory_number_id_queue", *id_list)
+                print(f"Pushed {len(id_list)} inventory number IDs to Redis queue")
+         
 
             # Upload only the ID list (not the full resource_data)
-            if id_list:
-                asyncio.run(safe_upload(id_list, "inventory_number_ids"))
+            if resource_data:
+                asyncio.run(safe_upload(resource_data,resource_name))
             else:
                 logger.warning("No IDs returned from list_inventory_item_id")
         except Exception as e:
@@ -139,21 +124,15 @@ with DAG(
 
     def fetch_inventory_details(**context):
         try:
-            # Pull filepath from XCom and read IDs from temp file
-            id_file_path = context["ti"].xcom_pull(task_ids="list_inventory_number_ids", key="inventory_number_ids_file")
-            if not id_file_path or not os.path.exists(id_file_path):
-                raise ValueError("No inventory  IDs file found")
-            
-            with open(id_file_path, 'r') as f:
-                id_list = json.load(f)
-            
-            logger.info(f"Loaded {len(id_list)} inventory IDs from temp file: {id_file_path}")
-            if not id_list:
-                raise ValueError("No inventory IDs found in file")
-
-            data = asyncio.run(list_inventory_details(id_list))
-            if data:
-                asyncio.run(safe_upload(data, "inventory_details"))
+            all_ids = []
+            while True:
+                invent_id = r.lpop("inventory_number_id_queue")
+                if invent_id is None:
+                    break
+                all_ids.append(invent_id.decode('utf-8'))
+            resource_name, all_items, numbers = asyncio.run(list_inventory_details(all_ids))
+            if all_items:
+                asyncio.run(safe_upload(all_items, resource_name))
             else:
                 logger.warning("list_inventory returned no data")
         except Exception as e:
@@ -175,43 +154,39 @@ with DAG(
     # ---------------------------
     def fetch_inventory_transfer_ids(**context):
         try:
-            # extractor returns (resource_name, id_list, resource_data)
+            # Extractor returns (resource_name, id_list, resource_data)
             resource_name, id_list, resource_data = asyncio.run(list_inventory_transfer_id())
-
-            # Write IDs to temp file and push filepath via XCom
-            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as f:
-                json.dump(id_list, f)
-                id_file_path = f.name
-
-            context["ti"].xcom_push(key="inventory_transfer_id_file", value=id_file_path)
-            logger.info(f"Wrote {len(id_list)} inventory transfer IDs to temp file: {id_file_path}")
-
-            # Upload only the ID list (not the full resource_data)
+            
             if id_list:
-                asyncio.run(safe_upload(id_list, "inventory_transfer_ids"))
+                r.rpush("inventory_transfer_id_queue", *id_list)
+                print(f"Pushed {len(id_list)} inventory transfer IDs to Redis queue")
+
+            # Upload the full inventory transfer data (not just the ID list)
+            if resource_data:
+                asyncio.run(safe_upload(resource_data, resource_name))
             else:
-                logger.warning("No IDs returned from list_inventory_item_id")
+                logger.warning("No inventory transfer data returned from list_inventory transfers_ids")
         except Exception as e:
-            logger.error(f"fetch_inventory_items_ids failed: {e}", exc_info=True)
+            logger.error(f"fetch_inventory transfer_ids failed: {e}", exc_info=True)
             raise
 
     def fetch_inventory_transfer_details(**context):
         try:
             # Pull filepath from XCom and read IDs from temp file
-            id_file_path = context["ti"].xcom_pull(task_ids="list_inventory_transfer_id", key="inventory_transfer_id_file")
-            if not id_file_path or not os.path.exists(id_file_path):
-                raise ValueError("No inventory  IDs file found")
+            all_ids = []
+            while True:
+                invent_id = r.lpop("inventory_transfer_id_queue")
+                if invent_id is None:
+                    break
+                all_ids.append(invent_id.decode('utf-8'))
             
-            with open(id_file_path, 'r') as f:
-                id_list = json.load(f)
-            
-            logger.info(f"Loaded {len(id_list)} inventory IDs from temp file: {id_file_path}")
-            if not id_list:
+            logger.info(f"Loaded {len(all_ids)} inventory IDs from temp file: {id_file_path}")
+            if not all_ids:
                 raise ValueError("No inventory IDs found in file")
 
-            data = asyncio.run(list_inventory_transfer_details(id_list))
-            if data:
-                asyncio.run(safe_upload(data, "inventory_transfer_details"))
+            resource_name, all_items = asyncio.run(list_inventory_transfer_details(all_ids))
+            if all_items:
+                asyncio.run(safe_upload(all_items,resource_name))
             else:
                 logger.warning("list_inventory returned no data")
         except Exception as e:
@@ -224,7 +199,7 @@ with DAG(
     )
 
     list_inventory__transfer_details_task = PythonOperator(
-        task_id="list_inventory_transfer_details",      # FIXED
+        task_id="list_inventory_transfer_details",      
         python_callable=fetch_inventory_transfer_details
     )
 
