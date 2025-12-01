@@ -80,9 +80,9 @@ with DAG(
                     break
                 all_ids.append(invent_id.decode('utf-8'))
 
-            data = asyncio.run(list_inventory_items(all_ids))
-            if data:
-                asyncio.run(safe_upload(data, "inventory_items_details"))
+            resource_name, all_items, item_ids = asyncio.run(list_inventory_items(all_ids))
+            if all_items:
+                asyncio.run(safe_upload(all_items, resource_name))
             else:
                 logger.warning("list_inventory_items returned no data")
         except Exception as e:
@@ -145,7 +145,7 @@ with DAG(
     )
 
     list_inventory_details_task = PythonOperator(
-        task_id="list_inventory_details",      # FIXED
+        task_id="list_inventory_details",
         python_callable=fetch_inventory_details
     )
 
@@ -180,7 +180,7 @@ with DAG(
                     break
                 all_ids.append(invent_id.decode('utf-8'))
             
-            logger.info(f"Loaded {len(all_ids)} inventory IDs from temp file: {id_file_path}")
+            logger.info(f"Loaded {len(all_ids)} inventory IDs")
             if not all_ids:
                 raise ValueError("No inventory IDs found in file")
 

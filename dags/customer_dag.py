@@ -187,7 +187,7 @@ with DAG(
         try:
             all_ids = []
             while True:
-                cust_id = r.lpop("category_id_queue")
+                cust_id = r.lpop("payment_id_queue")
                 if cust_id is None:
                     break
                 all_ids.append(cust_id.decode('utf-8'))
@@ -284,17 +284,17 @@ with DAG(
         try:
             all_ids = []
             while True:
-                cust_id = r.lpop("category_id_queue")
+                cust_id = r.lpop("subsidiary_relationship_id_queue")
                 if cust_id is None:
                     break
                 all_ids.append(cust_id.decode('utf-8'))
             print(f"id list: {all_ids}")
             
-            logger.info(f"Loaded {len(all_ids)} subsidiary_relationship IDs from temp file: {id_file_path}")
+            logger.info(f"Loaded {len(all_ids)} subsidiary_relationship IDs")
             if not all_ids:
                 raise ValueError("No subsidiary_relationship IDs found in file")
 
-            resource_name, data, _  = asyncio.run(list_customer_subsidiary_relationship(id_list))
+            resource_name, data, _  = asyncio.run(list_customer_subsidiary_relationship(all_ids))
             if data:
                 asyncio.run(safe_upload(data, resource_name))
             else:

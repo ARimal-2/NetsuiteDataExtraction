@@ -59,11 +59,10 @@ def setup_logging_for_url(resource_name):
     fh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
     logger.addHandler(fh)
 
-    # Console handler with UTF-8
+    # Console handler (safe)
     ch = logging.StreamHandler()
     ch.setLevel(logging.INFO)
     ch.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-    ch.stream = open(ch.stream.fileno(), mode='w', encoding='utf-8', buffering=1)
     logger.addHandler(ch)
 
     logger.info(f"Logging initialized in {logs_dir}")
