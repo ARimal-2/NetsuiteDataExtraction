@@ -42,3 +42,15 @@ INVENTORY_DETAILS_URL = f"{base_url}/inventoryNumber/{{id}}?expandSubResources=t
 
 INVENTORY_TRANSFER_ID_URL = f"{base_url}/inventoryTransfer"
 INVENTORY__TRANSFER_DETAILS_URL = f"{base_url}/inventoryTransfer/{{id}}?expandSubResources=true"
+
+SALES_ORDER_ID_URL = f"{base_url}/salesOrder"
+SALES_ORDER_DETAILS_URL = f"{base_url}/salesOrder/{{id}}?expandSubResources=true"
+
+SALES_ROLE_ID_URL = f"{base_url}/salesRole"
+SALES_ROLE_DETAILS = f"{base_url}/salesRole/{{id}}?expandSubResources=true"
+
+SALES_TAX_ITEM_ID_URL = f"{base_url}/salesTaxItem"
+SALES_TAX_ITEM_DETAILS = f"{base_url}/salesTaxItem/{{id}}?expandSubResources=true"
+
+PURHCHASE_ORDER_ID_URL = f"{base_url}/purchaseOrder"
+PURCHASE_ORDER_DETAILS_URL = f"{base_url}/purchaseOrder/{{id}}?expandSubResources=true"
