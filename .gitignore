@@ -10,3 +10,4 @@ logs/dag_processor_manager
 /netsuite_venv
 *.pyc
 __pycache__/
+delete_file.py

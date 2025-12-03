@@ -54,3 +54,15 @@ SALES_TAX_ITEM_DETAILS = f"{base_url}/salesTaxItem/{{id}}?expandSubResources=tru
 
 PURHCHASE_ORDER_ID_URL = f"{base_url}/purchaseOrder"
 PURCHASE_ORDER_DETAILS_URL = f"{base_url}/purchaseOrder/{{id}}?expandSubResources=true"
+
+INVENTORY_COUNT_ID_URL = f"{base_url}/inventoryCount"
+INVENTORY_COUNT_DETAILS_URL = f"{base_url}/inventoryCount/{{id}}?expandSubResources=true"
+
+ACCOUNT_ID_URL = f"{base_url}/account"
+ACCOUNT_DETAILS_URL = f"{base_url}/account/{{id}}?expandSubResources=true"
+
+ASSEMBLY_ITEM_ID_URL = f"{base_url}/assemblyItem"
+ASSEMBLY_ITEM_DETAILS_URL = f"{base_url}/assemblyItem/{{id}}?expandSubResources=true"
+
+DEPARTMENT_ID_URL = f"{base_url}/department"
+DEPARTMENT_DETAILS_URL = f"{base_url}/department/{{id}}?expandSubResources=true"

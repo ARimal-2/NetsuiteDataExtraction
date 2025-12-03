@@ -108,7 +108,7 @@ def save_ingestion_metadata(outer_logs_dir, resource_name,total_count, status, i
         return
     
     cos, bucket_name = connect_to_cos()
-    metadatakey = f"Plex_Api/{resource_name}/{resource_name}_metadata.json"
+    metadatakey = f"Netsuite_Api/{resource_name}/{resource_name}_metadata.json"
     # print(metadatakey)
 
     # Upload to IBM COS
