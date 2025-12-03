@@ -8,3 +8,5 @@ logs/ingestion
 logs
 logs/dag_processor_manager
 /netsuite_venv
+*.pyc
+__pycache__/
