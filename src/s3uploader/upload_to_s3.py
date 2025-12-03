@@ -18,7 +18,7 @@ def fetch_and_upload(data, resource_name):
     date_path = today.strftime("%Y/%m/%d")
     timestamp = today.strftime("%Y%m%dT%H%M%S")
 
-    object_key = f"Plex_Api/{resource_name}/{date_path}/{timestamp}_{resource_name}.json"
+    object_key = f"Netsuite_Api/{resource_name}/{date_path}/{timestamp}_{resource_name}.json"
     logger.info(f"Starting upload for {resource_name} → bucket: {bucket_name}, key: {object_key}")
 
     # Config for multipart (5 MB parts)
