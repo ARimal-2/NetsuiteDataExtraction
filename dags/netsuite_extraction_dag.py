@@ -5,8 +5,8 @@ import asyncio
 import logging
 import redis
 
-# Assuming these are available in your environment's PYTHONPATH/src dir
 from src.s3uploader.upload_to_s3 import fetch_and_upload
+
 
 from src.extractors.Customer.list_customers_ids import list_customers_ids
 from src.extractors.Customer.list_customer import customers_list
@@ -101,7 +101,7 @@ default_args = {
 }
 
 @dag(
-    dag_id="netsuite_dag",
+    dag_id="netsuite_extraction_dag",
     default_args=default_args,
     start_date=datetime(2024, 1, 1),
     schedule="0 */6 * * *",
@@ -175,7 +175,7 @@ def netsuite_pipeline():
         which downstream task_id to execute next.
         """
         return "fetch_customer_details" if id_count > 0 else "no_customer_ids"
-    # Define a target task for the "do nothing" branch (best practice)
+    # Define a target task for the "do nothing" branch 
     no_customer_ids = EmptyOperator(task_id="no_customer_ids")
     
     # ---------------------------
@@ -237,7 +237,7 @@ def netsuite_pipeline():
         which downstream task_id to execute next.
         """
         return "fetch_customer_details" if id_count > 0 else "no_inventory_items_id"
-    # Define a target task for the "do nothing" branch (best practice)
+    # Define a target task for the "do nothing" branch 
     no_inventory_items_id = EmptyOperator(task_id="no_inventory_items_id")
     
     # ---------------------------
@@ -293,7 +293,7 @@ def netsuite_pipeline():
         which downstream task_id to execute next.
         """
         return "fetch_inventory_number_details" if id_count > 0 else "no_inventory_number_id"
-    # Define a target task for the "do nothing" branch (best practice)
+    # Define a target task for the "do nothing" branch 
     no_inventory_numbers_id = EmptyOperator(task_id="no_inventory_number_id")
     
 
@@ -350,7 +350,7 @@ def netsuite_pipeline():
         which downstream task_id to execute next.
         """
         return "fetch_inventory_transfer_details" if id_count > 0 else "no_inventory_transfer_id"
-    # Define a target task for the "do nothing" branch (best practice)
+    # Define a target task for the "do nothing" branch 
     no_inventory_transfers_id = EmptyOperator(task_id="no_inventory_transfer_id")
     
     # ---------------------------
@@ -406,7 +406,7 @@ def netsuite_pipeline():
         which downstream task_id to execute next.
         """
         return "fetch_inventory_count_details" if id_count > 0 else "no_inventory_count_id"
-    # Define a target task for the "do nothing" branch (best practice)
+    # Define a target task for the "do nothing" branch 
     no_inventory_counts_id = EmptyOperator(task_id="no_inventory_count_id")
     
     # ---------------------------
@@ -462,7 +462,7 @@ def netsuite_pipeline():
         which downstream task_id to execute next.
         """
         return "fetch_purchase_orders_details" if id_count > 0 else "no_purchase_orders_id"
-    # Define a target task for the "do nothing" branch (best practice)
+    # Define a target task for the "do nothing" branch 
     no_purchase_orders_id = EmptyOperator(task_id="no_purchase_orders_id")
     
     # ---------------------------
@@ -518,7 +518,7 @@ def netsuite_pipeline():
         which downstream task_id to execute next.
         """
         return "fetch_sales_orders_details" if id_count > 0 else "no_sales_orders_id"
-    # Define a target task for the "do nothing" branch (best practice)
+    # Define a target task for the "do nothing" branch 
     no_sales_orders_id = EmptyOperator(task_id="no_sales_orders_id")
 
     # ---------------------------
@@ -574,7 +574,7 @@ def netsuite_pipeline():
         which downstream task_id to execute next.
         """
         return "fetch_account_details" if id_count > 0 else "no_account_id"
-    # Define a target task for the "do nothing" branch (best practice)
+    # Define a target task for the "do nothing" branch 
     no_account_id = EmptyOperator(task_id="no_account_id")
     
     # ---------------------------
@@ -630,7 +630,7 @@ def netsuite_pipeline():
         which downstream task_id to execute next.
         """
         return "fetch_assembly_items_details" if id_count > 0 else "no_assembly_items_id"
-    # Define a target task for the "do nothing" branch (best practice)
+    # Define a target task for the "do nothing" branch 
     no_assembly_items_id = EmptyOperator(task_id="no_assembly_items_id")
 
 
@@ -687,7 +687,7 @@ def netsuite_pipeline():
         which downstream task_id to execute next.
         """
         return "fetch_subsidiary_details" if id_count > 0 else "no_subsidiary_id"
-    # Define a target task for the "do nothing" branch (best practice)
+    # Define a target task for the "do nothing" branch 
     no_subsidiary_id = EmptyOperator(task_id="no_subsidiary_id")
 
 
@@ -745,7 +745,7 @@ def netsuite_pipeline():
         which downstream task_id to execute next.
         """
         return "fetch_intercompanyTransferOrder_details" if id_count > 0 else "no_intercompanyTransferOrder_id"
-    # Define a target task for the "do nothing" branch (best practice)
+    # Define a target task for the "do nothing" branch 
     no_intercompanyTransferOrder_id = EmptyOperator(task_id="no_intercompanyTransferOrder_id")
 
 
@@ -802,7 +802,7 @@ def netsuite_pipeline():
         which downstream task_id to execute next.
         """
         return "fetch_invoice_details" if id_count > 0 else "no_invoice_id"
-    # Define a target task for the "do nothing" branch (best practice)
+    # Define a target task for the "do nothing" branch 
     no_invoice_id = EmptyOperator(task_id="no_invoice_id")
 
     
@@ -859,7 +859,7 @@ def netsuite_pipeline():
         which downstream task_id to execute next.
         """
         return "fetch_itemfulfillment_details" if id_count > 0 else "no_itemfulfillment_id"
-    # Define a target task for the "do nothing" branch (best practice)
+    # Define a target task for the "do nothing" branch 
     no_itemfulfillment_id = EmptyOperator(task_id="no_itemfulfillment_id")
  
     # ---------------------------
@@ -915,7 +915,7 @@ def netsuite_pipeline():
         which downstream task_id to execute next.
         """
         return "fetch_itemReceipt_details" if id_count > 0 else "no_itemReceipt_id"
-    # Define a target task for the "do nothing" branch (best practice)
+    # Define a target task for the "do nothing" branch 
     no_itemReceipt_id = EmptyOperator(task_id="no_itemReceipt_id")
 
     
@@ -972,7 +972,7 @@ def netsuite_pipeline():
         which downstream task_id to execute next.
         """
         return "fetch_location_details" if id_count > 0 else "no_location_id"
-    # Define a target task for the "do nothing" branch (best practice)
+    # Define a target task for the "do nothing" branch 
     no_location_id = EmptyOperator(task_id="no_location_id")
 
     
@@ -1029,7 +1029,7 @@ def netsuite_pipeline():
         which downstream task_id to execute next.
         """
         return "fetch_department_details" if id_count > 0 else "no_department_id"
-    # Define a target task for the "do nothing" branch (best practice)
+    # Define a target task for the "do nothing" branch 
     no_department_id = EmptyOperator(task_id="no_department_id")
 
     
@@ -1086,7 +1086,7 @@ def netsuite_pipeline():
         which downstream task_id to execute next.
         """
         return "fetch_transferOrder_details" if id_count > 0 else "no_transferOrder_id"
-    # Define a target task for the "do nothing" branch (best practice)
+    # Define a target task for the "do nothing" branch 
     no_transferOrder_id = EmptyOperator(task_id="no_transferOrder_id")
 
 
@@ -1144,7 +1144,7 @@ def netsuite_pipeline():
         which downstream task_id to execute next.
         """
         return "fetch_vendor_details" if id_count > 0 else "no_vendor_id"
-    # Define a target task for the "do nothing" branch (best practice)
+    # Define a target task for the "do nothing" branch 
     no_vendor_id = EmptyOperator(task_id="no_vendor_id")
     # ---------------------------
     # DEPENDENCIES / WORKFLOW
@@ -1203,7 +1203,7 @@ def netsuite_pipeline():
         which downstream task_id to execute next.
         """
         return "fetch_vendorBill_details" if id_count > 0 else "no_vendorBill_id"
-    # Define a target task for the "do nothing" branch (best practice)
+    # Define a target task for the "do nothing" branch 
     no_vendorBill_id = EmptyOperator(task_id="no_vendorBill_id")
 
     
@@ -1260,7 +1260,7 @@ def netsuite_pipeline():
         which downstream task_id to execute next.
         """
         return "fetch_vendorCategory_details" if id_count > 0 else "no_vendorCategory_id"
-    # Define a target task for the "do nothing" branch (best practice)
+    # Define a target task for the "do nothing" branch 
     no_vendorCategory_id = EmptyOperator(task_id="no_vendorCategory_id")
 
     #vendorCategory flow
