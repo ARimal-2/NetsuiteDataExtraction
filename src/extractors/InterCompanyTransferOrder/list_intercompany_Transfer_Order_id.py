@@ -9,7 +9,7 @@ from src.extractors.utils import (
     get_extraction_dates
 )
 from utils.headers import get_netsuite_headers
-from urls import DEPARTMENT_ID_URL
+from urls import INTERCOMPANY_TRANSFER_ORDER_URL
 import urllib.parse
 
 
@@ -22,7 +22,7 @@ def extract_ids(resource_data, logger):
     """
     try:
         id_list = [item["id"] for item in resource_data if isinstance(item, dict) and "id" in item]
-        logger.info(f"Extracted {len(id_list)} department IDs")
+        logger.info(f"Extracted {len(id_list)} customer IDs")
         return id_list
     except Exception as e:
         logger.error(f"Error extracting IDs: {e}")
@@ -67,7 +67,7 @@ async def fetch_resource_data(url, logger):
 
 
 async def fetch_resource(url, resource_name):
-    """Main function to fetch all department with pagination and save IDs."""
+    """Main function to fetch all intercompanyTransferOrder with pagination and save IDs."""
     logger = logging.getLogger(resource_name)
     now = datetime.now(timezone.utc)
     outer_logs_dir, log_dir, id_file_path, logger = setup_extraction_environment(resource_name, now)
@@ -81,7 +81,7 @@ async def fetch_resource(url, resource_name):
                 last_extracted = dt.strftime("%m/%d/%y")
                 print(f"Converted last_extracted to NetSuite format: {last_extracted}")
     next_url = build_incremental_url(url, last_extracted, logger)
-    print(f"Final URL for fetching department: {next_url}")
+    print(f"Final URL for fetching intercompanyTransferOrder: {next_url}")
     all_items = []
 
     while next_url:
@@ -94,7 +94,7 @@ async def fetch_resource(url, resource_name):
         next_links = [link["href"] for link in data.get("links", []) if link.get("rel") == "next"]
         next_url = next_links[0] if next_links else None
 
-    logger.info(f"Total {len(all_items)} department fetched")
+    logger.info(f"Total {len(all_items)} intercompanyTransferOrder fetched")
     resource_data = all_items[:10]
     # Save fetched data and metadata
     await save_outputs_and_metadata(resource_name, resource_data, log_dir, outer_logs_dir, now, id_file_path)
@@ -104,6 +104,6 @@ async def fetch_resource(url, resource_name):
     return resource_name, id_list, resource_data
 
 
-async def list_department_id():
-    """Entry point to fetch all department."""
-    return await fetch_resource(DEPARTMENT_ID_URL, "list_department_id")
+async def list_intercompanyTransferOrder_id():
+    """Entry point to fetch all intercompanyTransferOrder."""
+    return await fetch_resource(INTERCOMPANY_TRANSFER_ORDER_URL, "list_intercompanyTransferOrder_id")
