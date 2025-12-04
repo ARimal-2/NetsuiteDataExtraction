@@ -66,3 +66,34 @@ ASSEMBLY_ITEM_DETAILS_URL = f"{base_url}/assemblyItem/{{id}}?expandSubResources=
 
 DEPARTMENT_ID_URL = f"{base_url}/department"
 DEPARTMENT_DETAILS_URL = f"{base_url}/department/{{id}}?expandSubResources=true"
+
+INTERCOMPANY_TRANSFER_ORDER_URL = f"{base_url}/interCompanyTransferOrder"
+INTERCOMPANY_TRANSFER_ORDER_DETAILS_URL = f"{base_url}/interCompanyTransferOrder/{{id}}?expandSubResources=true"
+
+INVOICE_ID_URL = f"{base_url}/invoice"
+INVOICE_DETAILS_URL = f"{base_url}/invoice/{{id}}?expandSubResources=true"
+
+ITEM_FULFILLMENT_ID_URL = f"{base_url}/itemFulfillment"
+ITEM_FULFILLMENT_DETAILS_URL = f"{base_url}/itemFulfillment/{{id}}?expandSubResources=true"
+
+ITEM_RECEIPT_ID_URL = f"{base_url}/itemReceipt"
+ITEM_RECEIPT_DETAILS_URL = f"{base_url}/itemReceipt/{{id}}?expandSubResources=true"
+
+LOCATION_ID_URL = f"{base_url}/location"
+LOCATION_DETAILS_URL = f"{base_url}/location/{{id}}?expandSubResources=true"	
+
+SUBSIDIARY_ID_URL = f"{base_url}/subsidiary"
+SUBSIDIARY_DETAILS_URL = f"{base_url}/subsidiary/{{id}}?expandSubResources=true"
+
+TRANSFER_ORDER_ID_URL = f"{base_url}/transferOrder"
+TRANSFER_ORDER_DETAILS_URL = f"{base_url}/transferOrder/{{id}}?expandSubResources=true"
+
+VENDOR_ID_URL = f"{base_url}/vendor"
+VENDOR_DETAILS_URL = f"{base_url}/vendor/{{id}}?expandSubResources=true"
+
+VENDOR_BILL_ID_URL = f"{base_url}/vendorBill"
+VENDOR_BILL_DETAILS_URL = f"{base_url}/vendorBill/{{id}}?expandSubResources=true"
+
+VENDOR_CATEGORY_ID_URL = f"{base_url}/vendorCategory"
+VENDOR_CATEGORY_DETAILS_URL = f"{base_url}/vendorCategory/{{id}}?expandSubResources=true"
+
