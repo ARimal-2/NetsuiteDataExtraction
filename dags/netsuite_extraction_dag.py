@@ -41,6 +41,38 @@ from src.extractors.AssemblyItem.list_assembly_item_id import list_assembly_item
 
 from src.extractors.department.list_department_id import list_department_id
 from src.extractors.department.list_department import list_department_details
+
+from src.extractors.InterCompanyTransferOrder.list_intercompany_Transfer_Order_id import list_intercompanyTransferOrder_id
+from src.extractors.InterCompanyTransferOrder.list_intercompanyTransferOrder_details import list_intercompanyTransferOrder_details
+
+from src.extractors.invoice.list_invoice import list_invoice_details
+from src.extractors.invoice.list_invoice_id import list_invoice_id
+
+from src.extractors.ItemFulfillment.list_item_fulfillment_id import list_item_fulfillment_id
+from src.extractors.ItemFulfillment.list_item_fulfillment import list_item_fulfillment_details
+
+from src.extractors.itemReceipt.list_itemReceipt import list_itemReceipt_details
+from src.extractors.itemReceipt.list_itemReceipt_id import list_itemReceipt_id
+
+from src.extractors.location.list_location_id import list_location_id
+from src.extractors.location.list_location import list_location_details
+
+from src.extractors.Subsidiary.list_subsidiary_id import list_subsidiary_id
+from src.extractors.Subsidiary.list_subsidiary import list_subsidiary_details
+
+from src.extractors.TransferOrder.list_transferOrder_id import list_transferOrder_id
+from src.extractors.TransferOrder.list_transferOrder import list_transferOrder_details
+
+from src.extractors.vendor.list_vendor import list_vendor_details
+from src.extractors.vendor.list_vendor_id import list_vendor_id
+
+
+from src.extractors.vendorBill.list_vendor_id import list_vendorBill_id
+from src.extractors.vendorBill.list_vendor import list_vendorBill_details
+
+from src.extractors.vendorCategory.list_vendorCategory_id import list_vendorCategory_id
+from src.extractors.vendorCategory.list_vendorCategory import list_vendorCategory_details
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -602,8 +634,350 @@ def netsuite_pipeline():
     no_assembly_items_id = EmptyOperator(task_id="no_assembly_items_id")
 
 
-        # ---------------------------
-    # ASSEMBLY TASKS DEFINITION
+    # ---------------------------
+    # SUBSIDIARY TASKS DEFINITION
+    # ---------------------------
+    @task(task_id="fetch_subsidiary_ids_task")
+    def fetch_subsidiary_ids_task():
+        try:
+            resource_name, id_list, resource_data = asyncio.run(list_subsidiary_id())
+
+            if id_list:
+                r.rpush("subsidiary_id_queue", *id_list)
+                print(f"Pushed {len(id_list)} subsidiary IDs to Redis queue")
+            if resource_data:
+                asyncio.run(safe_upload(resource_data, resource_name))
+            else:
+                logger.warning("No IDs returned from list subsidiary")
+            return len(id_list)
+        except Exception as e:
+            logger.error(f"fetch_subsidiary_ids failed: {e}", exc_info=True)
+            raise
+    @task(task_id="fetch_subsidiary_details")
+    def fetch_subsidiary_details_task():
+        """
+        Pops IDs from the Redis queue and fetches/uploads detailed subsidiary records.
+        This task runs only if IDs were found.
+        """
+        try:
+            all_ids = []
+            # Pop all IDs from the queue until empty
+            while True:
+                cust_id = r.lpop("subsidiary_id_queue")
+                if cust_id is None:
+                    break
+                all_ids.append(cust_id.decode('utf-8'))
+            
+            # The previous task ensures all_ids is not empty if this runs.
+            logger.info(f"Loaded {len(all_ids)} subsidiary IDs from Redis queue")
+
+            resource_name, data, _ = asyncio.run(list_subsidiary_details(all_ids))
+            if data:
+                asyncio.run(safe_upload(data, resource_name))
+            else:
+                logger.warning("list subsidiary returned no data")
+        
+        except Exception as e:
+            logger.error(f"fetch_subsidiary_details failed: {e}", exc_info=True)
+            raise
+    @task.branch(task_id="decide_subsidiary_processing_path")
+    def decide_subsidiary_processing_path(id_count: int) -> str:
+        """
+        Uses the output (id_count) from the previous task to decide 
+        which downstream task_id to execute next.
+        """
+        return "fetch_subsidiary_details" if id_count > 0 else "no_subsidiary_id"
+    # Define a target task for the "do nothing" branch (best practice)
+    no_subsidiary_id = EmptyOperator(task_id="no_subsidiary_id")
+
+
+
+    # ---------------------------
+    # intercompanyTransferOrder TASKS DEFINITION
+    # ---------------------------
+    @task(task_id="fetch_intercompanyTransferOrder_ids_task")
+    def fetch_intercompanyTransferOrder_ids_task():
+        try:
+            resource_name, id_list, resource_data = asyncio.run(list_intercompanyTransferOrder_id())
+
+            if id_list:
+                r.rpush("intercompanyTransferOrder_id_queue", *id_list)
+                print(f"Pushed {len(id_list)} intercompanyTransferOrder IDs to Redis queue")
+            if resource_data:
+                asyncio.run(safe_upload(resource_data, resource_name))
+            else:
+                logger.warning("No IDs returned from list intercompanyTransferOrder")
+            return len(id_list)
+        except Exception as e:
+            logger.error(f"fetch_intercompanyTransferOrder_ids failed: {e}", exc_info=True)
+            raise
+    @task(task_id="fetch_intercompanyTransferOrder_details")
+    def fetch_intercompanyTransferOrder_details_task():
+        """
+        Pops IDs from the Redis queue and fetches/uploads detailed intercompanyTransferOrder records.
+        This task runs only if IDs were found.
+        """
+        try:
+            all_ids = []
+            # Pop all IDs from the queue until empty
+            while True:
+                cust_id = r.lpop("intercompanyTransferOrder_id_queue")
+                if cust_id is None:
+                    break
+                all_ids.append(cust_id.decode('utf-8'))
+            
+            # The previous task ensures all_ids is not empty if this runs.
+            logger.info(f"Loaded {len(all_ids)} intercompanyTransferOrder IDs from Redis queue")
+
+            resource_name, data, _ = asyncio.run(list_intercompanyTransferOrder_details(all_ids))
+            if data:
+                asyncio.run(safe_upload(data, resource_name))
+            else:
+                logger.warning("list intercompanyTransferOrder returned no data")
+        
+        except Exception as e:
+            logger.error(f"fetch_intercompanyTransferOrder_details failed: {e}", exc_info=True)
+            raise
+    @task.branch(task_id="decide_intercompanyTransferOrder_processing_path")
+    def decide_intercompanyTransferOrder_processing_path(id_count: int) -> str:
+        """
+        Uses the output (id_count) from the previous task to decide 
+        which downstream task_id to execute next.
+        """
+        return "fetch_intercompanyTransferOrder_details" if id_count > 0 else "no_intercompanyTransferOrder_id"
+    # Define a target task for the "do nothing" branch (best practice)
+    no_intercompanyTransferOrder_id = EmptyOperator(task_id="no_intercompanyTransferOrder_id")
+
+
+    # ---------------------------
+    # invoice TASKS DEFINITION
+    # ---------------------------
+    @task(task_id="fetch_invoice_ids_task")
+    def fetch_invoice_ids_task():
+        try:
+            resource_name, id_list, resource_data = asyncio.run(list_invoice_id())
+
+            if id_list:
+                r.rpush("invoice_id_queue", *id_list)
+                print(f"Pushed {len(id_list)} invoice IDs to Redis queue")
+            if resource_data:
+                asyncio.run(safe_upload(resource_data, resource_name))
+            else:
+                logger.warning("No IDs returned from list invoice")
+            return len(id_list)
+        except Exception as e:
+            logger.error(f"fetch_invoice_ids failed: {e}", exc_info=True)
+            raise
+    @task(task_id="fetch_invoice_details")
+    def fetch_invoice_details_task():
+        """
+        Pops IDs from the Redis queue and fetches/uploads detailed invoice records.
+        This task runs only if IDs were found.
+        """
+        try:
+            all_ids = []
+            # Pop all IDs from the queue until empty
+            while True:
+                cust_id = r.lpop("invoice_id_queue")
+                if cust_id is None:
+                    break
+                all_ids.append(cust_id.decode('utf-8'))
+            
+            # The previous task ensures all_ids is not empty if this runs.
+            logger.info(f"Loaded {len(all_ids)} invoice IDs from Redis queue")
+
+            resource_name, data, _ = asyncio.run(list_invoice_details(all_ids))
+            if data:
+                asyncio.run(safe_upload(data, resource_name))
+            else:
+                logger.warning("list invoice returned no data")
+        
+        except Exception as e:
+            logger.error(f"fetch_invoice_details failed: {e}", exc_info=True)
+            raise
+    @task.branch(task_id="decide_invoice_processing_path")
+    def decide_invoice_processing_path(id_count: int) -> str:
+        """
+        Uses the output (id_count) from the previous task to decide 
+        which downstream task_id to execute next.
+        """
+        return "fetch_invoice_details" if id_count > 0 else "no_invoice_id"
+    # Define a target task for the "do nothing" branch (best practice)
+    no_invoice_id = EmptyOperator(task_id="no_invoice_id")
+
+    
+    # ---------------------------
+    # ITEM FULFILLMENT TASKS DEFINITION
+    # ---------------------------
+    @task(task_id="fetch_itemfulfillment_ids_task")
+    def fetch_itemfulfillment_ids_task():
+        try:
+            resource_name, id_list, resource_data = asyncio.run(list_item_fulfillment_id())
+
+            if id_list:
+                r.rpush("itemfulfillment_id_queue", *id_list)
+                print(f"Pushed {len(id_list)} itemfulfillment IDs to Redis queue")
+            if resource_data:
+                asyncio.run(safe_upload(resource_data, resource_name))
+            else:
+                logger.warning("No IDs returned from list itemfulfillment")
+            return len(id_list)
+        except Exception as e:
+            logger.error(f"fetch_itemfulfillment_ids failed: {e}", exc_info=True)
+            raise
+    @task(task_id="fetch_itemfulfillment_details")
+    def fetch_itemfulfillment_details_task():
+        """
+        Pops IDs from the Redis queue and fetches/uploads detailed itemfulfillment records.
+        This task runs only if IDs were found.
+        """
+        try:
+            all_ids = []
+            # Pop all IDs from the queue until empty
+            while True:
+                cust_id = r.lpop("itemfulfillment_id_queue")
+                if cust_id is None:
+                    break
+                all_ids.append(cust_id.decode('utf-8'))
+            
+            # The previous task ensures all_ids is not empty if this runs.
+            logger.info(f"Loaded {len(all_ids)} itemfulfillment IDs from Redis queue")
+
+            resource_name, data, _ = asyncio.run(list_item_fulfillment_details(all_ids))
+            if data:
+                asyncio.run(safe_upload(data, resource_name))
+            else:
+                logger.warning("list itemfulfillment returned no data")
+        
+        except Exception as e:
+            logger.error(f"fetch_itemfulfillment_details failed: {e}", exc_info=True)
+            raise
+    @task.branch(task_id="decide_itemfulfillment_processing_path")
+    def decide_itemfulfillment_processing_path(id_count: int) -> str:
+        """
+        Uses the output (id_count) from the previous task to decide 
+        which downstream task_id to execute next.
+        """
+        return "fetch_itemfulfillment_details" if id_count > 0 else "no_itemfulfillment_id"
+    # Define a target task for the "do nothing" branch (best practice)
+    no_itemfulfillment_id = EmptyOperator(task_id="no_itemfulfillment_id")
+ 
+    # ---------------------------
+    # itemReceipt TASKS DEFINITION
+    # ---------------------------
+    @task(task_id="fetch_itemReceipt_ids_task")
+    def fetch_itemReceipt_ids_task():
+        try:
+            resource_name, id_list, resource_data = asyncio.run(list_itemReceipt_id())
+
+            if id_list:
+                r.rpush("itemReceipt_id_queue", *id_list)
+                print(f"Pushed {len(id_list)} itemReceipt IDs to Redis queue")
+            if resource_data:
+                asyncio.run(safe_upload(resource_data, resource_name))
+            else:
+                logger.warning("No IDs returned from list itemReceipt")
+            return len(id_list)
+        except Exception as e:
+            logger.error(f"fetch_itemReceipt_ids failed: {e}", exc_info=True)
+            raise
+    @task(task_id="fetch_itemReceipt_details")
+    def fetch_itemReceipt_details_task():
+        """
+        Pops IDs from the Redis queue and fetches/uploads detailed itemReceipt records.
+        This task runs only if IDs were found.
+        """
+        try:
+            all_ids = []
+            # Pop all IDs from the queue until empty
+            while True:
+                cust_id = r.lpop("itemReceipt_id_queue")
+                if cust_id is None:
+                    break
+                all_ids.append(cust_id.decode('utf-8'))
+            
+            # The previous task ensures all_ids is not empty if this runs.
+            logger.info(f"Loaded {len(all_ids)} itemReceipt IDs from Redis queue")
+
+            resource_name, data, _ = asyncio.run(list_itemReceipt_details(all_ids))
+            if data:
+                asyncio.run(safe_upload(data, resource_name))
+            else:
+                logger.warning("list itemReceipt returned no data")
+        
+        except Exception as e:
+            logger.error(f"fetch_itemReceipt_details failed: {e}", exc_info=True)
+            raise
+    @task.branch(task_id="decide_itemReceipt_processing_path")
+    def decide_itemReceipt_processing_path(id_count: int) -> str:
+        """
+        Uses the output (id_count) from the previous task to decide 
+        which downstream task_id to execute next.
+        """
+        return "fetch_itemReceipt_details" if id_count > 0 else "no_itemReceipt_id"
+    # Define a target task for the "do nothing" branch (best practice)
+    no_itemReceipt_id = EmptyOperator(task_id="no_itemReceipt_id")
+
+    
+    # ---------------------------
+    # LOCATION TASKS DEFINITION
+    # ---------------------------
+    @task(task_id="fetch_location_ids_task")
+    def fetch_location_ids_task():
+        try:
+            resource_name, id_list, resource_data = asyncio.run(list_location_id())
+
+            if id_list:
+                r.rpush("location_id_queue", *id_list)
+                print(f"Pushed {len(id_list)} location IDs to Redis queue")
+            if resource_data:
+                asyncio.run(safe_upload(resource_data, resource_name))
+            else:
+                logger.warning("No IDs returned from list location")
+            return len(id_list)
+        except Exception as e:
+            logger.error(f"fetch_location_ids failed: {e}", exc_info=True)
+            raise
+    @task(task_id="fetch_location_details")
+    def fetch_location_details_task():
+        """
+        Pops IDs from the Redis queue and fetches/uploads detailed location records.
+        This task runs only if IDs were found.
+        """
+        try:
+            all_ids = []
+            # Pop all IDs from the queue until empty
+            while True:
+                cust_id = r.lpop("location_id_queue")
+                if cust_id is None:
+                    break
+                all_ids.append(cust_id.decode('utf-8'))
+            
+            # The previous task ensures all_ids is not empty if this runs.
+            logger.info(f"Loaded {len(all_ids)} location IDs from Redis queue")
+
+            resource_name, data, _ = asyncio.run(list_location_details(all_ids))
+            if data:
+                asyncio.run(safe_upload(data, resource_name))
+            else:
+                logger.warning("list location returned no data")
+        
+        except Exception as e:
+            logger.error(f"fetch_location_details failed: {e}", exc_info=True)
+            raise
+    @task.branch(task_id="decide_location_processing_path")
+    def decide_location_processing_path(id_count: int) -> str:
+        """
+        Uses the output (id_count) from the previous task to decide 
+        which downstream task_id to execute next.
+        """
+        return "fetch_location_details" if id_count > 0 else "no_location_id"
+    # Define a target task for the "do nothing" branch (best practice)
+    no_location_id = EmptyOperator(task_id="no_location_id")
+
+    
+    # ---------------------------
+    # DEPARTMENT TASKS DEFINITION
     # ---------------------------
     @task(task_id="fetch_department_ids_task")
     def fetch_department_ids_task():
@@ -657,10 +1031,287 @@ def netsuite_pipeline():
         return "fetch_department_details" if id_count > 0 else "no_department_id"
     # Define a target task for the "do nothing" branch (best practice)
     no_department_id = EmptyOperator(task_id="no_department_id")
+
+    
+    # ---------------------------
+    # TRANSFERORDER TASKS DEFINITION
+    # ---------------------------
+    @task(task_id="fetch_transferOrder_ids_task")
+    def fetch_transferOrder_ids_task():
+        try:
+            resource_name, id_list, resource_data = asyncio.run(list_transferOrder_id())
+
+            if id_list:
+                r.rpush("transferOrder_id_queue", *id_list)
+                print(f"Pushed {len(id_list)} transferOrder IDs to Redis queue")
+            if resource_data:
+                asyncio.run(safe_upload(resource_data, resource_name))
+            else:
+                logger.warning("No IDs returned from list transferOrder")
+            return len(id_list)
+        except Exception as e:
+            logger.error(f"fetch_transferOrder_ids failed: {e}", exc_info=True)
+            raise
+    @task(task_id="fetch_transferOrder_details")
+    def fetch_transferOrder_details_task():
+        """
+        Pops IDs from the Redis queue and fetches/uploads detailed transferOrder records.
+        This task runs only if IDs were found.
+        """
+        try:
+            all_ids = []
+            # Pop all IDs from the queue until empty
+            while True:
+                cust_id = r.lpop("transferOrder_id_queue")
+                if cust_id is None:
+                    break
+                all_ids.append(cust_id.decode('utf-8'))
+            
+            # The previous task ensures all_ids is not empty if this runs.
+            logger.info(f"Loaded {len(all_ids)} transferOrder IDs from Redis queue")
+
+            resource_name, data, _ = asyncio.run(list_transferOrder_details(all_ids))
+            if data:
+                asyncio.run(safe_upload(data, resource_name))
+            else:
+                logger.warning("list transferOrder returned no data")
+        
+        except Exception as e:
+            logger.error(f"fetch_transferOrder_details failed: {e}", exc_info=True)
+            raise
+    @task.branch(task_id="decide_transferOrder_processing_path")
+    def decide_transferOrder_processing_path(id_count: int) -> str:
+        """
+        Uses the output (id_count) from the previous task to decide 
+        which downstream task_id to execute next.
+        """
+        return "fetch_transferOrder_details" if id_count > 0 else "no_transferOrder_id"
+    # Define a target task for the "do nothing" branch (best practice)
+    no_transferOrder_id = EmptyOperator(task_id="no_transferOrder_id")
+
+
+    
+    # ---------------------------
+    # VENDOR TASKS DEFINITION
+    # ---------------------------
+    @task(task_id="fetch_vendor_ids_task")
+    def fetch_vendor_ids_task():
+        try:
+            resource_name, id_list, resource_data = asyncio.run(list_vendor_id())
+
+            if id_list:
+                r.rpush("vendor_id_queue", *id_list)
+                print(f"Pushed {len(id_list)} vendor IDs to Redis queue")
+            if resource_data:
+                asyncio.run(safe_upload(resource_data, resource_name))
+            else:
+                logger.warning("No IDs returned from list vendor")
+            return len(id_list)
+        except Exception as e:
+            logger.error(f"fetch_vendor_ids failed: {e}", exc_info=True)
+            raise
+    @task(task_id="fetch_vendor_details")
+    def fetch_vendor_details_task():
+        """
+        Pops IDs from the Redis queue and fetches/uploads detailed vendor records.
+        This task runs only if IDs were found.
+        """
+        try:
+            all_ids = []
+            # Pop all IDs from the queue until empty
+            while True:
+                cust_id = r.lpop("vendor_id_queue")
+                if cust_id is None:
+                    break
+                all_ids.append(cust_id.decode('utf-8'))
+            
+            # The previous task ensures all_ids is not empty if this runs.
+            logger.info(f"Loaded {len(all_ids)} vendor IDs from Redis queue")
+
+            resource_name, data, _ = asyncio.run(list_vendor_details(all_ids))
+            if data:
+                asyncio.run(safe_upload(data, resource_name))
+            else:
+                logger.warning("list vendor returned no data")
+        
+        except Exception as e:
+            logger.error(f"fetch_vendor_details failed: {e}", exc_info=True)
+            raise
+    @task.branch(task_id="decide_vendor_processing_path")
+    def decide_vendor_processing_path(id_count: int) -> str:
+        """
+        Uses the output (id_count) from the previous task to decide 
+        which downstream task_id to execute next.
+        """
+        return "fetch_vendor_details" if id_count > 0 else "no_vendor_id"
+    # Define a target task for the "do nothing" branch (best practice)
+    no_vendor_id = EmptyOperator(task_id="no_vendor_id")
     # ---------------------------
     # DEPENDENCIES / WORKFLOW
     # ---------------------------
     
+    # ---------------------------
+    # DEPARTMENT TASKS DEFINITION
+    # ---------------------------
+    @task(task_id="fetch_vendorBill_ids_task")
+    def fetch_vendorBill_ids_task():
+        try:
+            resource_name, id_list, resource_data = asyncio.run(list_vendorBill_id())
+
+            if id_list:
+                r.rpush("vendorBill_id_queue", *id_list)
+                print(f"Pushed {len(id_list)} vendorBill IDs to Redis queue")
+            if resource_data:
+                asyncio.run(safe_upload(resource_data, resource_name))
+            else:
+                logger.warning("No IDs returned from list vendorBill")
+            return len(id_list)
+        except Exception as e:
+            logger.error(f"fetch_vendorBill_ids failed: {e}", exc_info=True)
+            raise
+    @task(task_id="fetch_vendorBill_details")
+    def fetch_vendorBill_details_task():
+        """
+        Pops IDs from the Redis queue and fetches/uploads detailed vendorBill records.
+        This task runs only if IDs were found.
+        """
+        try:
+            all_ids = []
+            # Pop all IDs from the queue until empty
+            while True:
+                cust_id = r.lpop("vendorBill_id_queue")
+                if cust_id is None:
+                    break
+                all_ids.append(cust_id.decode('utf-8'))
+            
+            # The previous task ensures all_ids is not empty if this runs.
+            logger.info(f"Loaded {len(all_ids)} vendorBill IDs from Redis queue")
+
+            resource_name, data, _ = asyncio.run(list_vendorBill_details(all_ids))
+            if data:
+                asyncio.run(safe_upload(data, resource_name))
+            else:
+                logger.warning("list vendorBill returned no data")
+        
+        except Exception as e:
+            logger.error(f"fetch_vendorBill_details failed: {e}", exc_info=True)
+            raise
+    @task.branch(task_id="decide_vendorBill_processing_path")
+    def decide_vendorBill_processing_path(id_count: int) -> str:
+        """
+        Uses the output (id_count) from the previous task to decide 
+        which downstream task_id to execute next.
+        """
+        return "fetch_vendorBill_details" if id_count > 0 else "no_vendorBill_id"
+    # Define a target task for the "do nothing" branch (best practice)
+    no_vendorBill_id = EmptyOperator(task_id="no_vendorBill_id")
+
+    
+    # ---------------------------
+    # DEPARTMENT TASKS DEFINITION
+    # ---------------------------
+    @task(task_id="fetch_vendorCategory_ids_task")
+    def fetch_vendorCategory_ids_task():
+        try:
+            resource_name, id_list, resource_data = asyncio.run(list_vendorCategory_id())
+
+            if id_list:
+                r.rpush("vendorCategory_id_queue", *id_list)
+                print(f"Pushed {len(id_list)} vendorCategory IDs to Redis queue")
+            if resource_data:
+                asyncio.run(safe_upload(resource_data, resource_name))
+            else:
+                logger.warning("No IDs returned from list vendorCategory")
+            return len(id_list)
+        except Exception as e:
+            logger.error(f"fetch_vendorCategory_ids failed: {e}", exc_info=True)
+            raise
+    @task(task_id="fetch_vendorCategory_details")
+    def fetch_vendorCategory_details_task():
+        """
+        Pops IDs from the Redis queue and fetches/uploads detailed vendorCategory records.
+        This task runs only if IDs were found.
+        """
+        try:
+            all_ids = []
+            # Pop all IDs from the queue until empty
+            while True:
+                cust_id = r.lpop("vendorCategory_id_queue")
+                if cust_id is None:
+                    break
+                all_ids.append(cust_id.decode('utf-8'))
+            
+            # The previous task ensures all_ids is not empty if this runs.
+            logger.info(f"Loaded {len(all_ids)} vendorCategory IDs from Redis queue")
+
+            resource_name, data, _ = asyncio.run(list_vendorCategory_details(all_ids))
+            if data:
+                asyncio.run(safe_upload(data, resource_name))
+            else:
+                logger.warning("list vendorCategory returned no data")
+        
+        except Exception as e:
+            logger.error(f"fetch_vendorCategory_details failed: {e}", exc_info=True)
+            raise
+    @task.branch(task_id="decide_vendorCategory_processing_path")
+    def decide_vendorCategory_processing_path(id_count: int) -> str:
+        """
+        Uses the output (id_count) from the previous task to decide 
+        which downstream task_id to execute next.
+        """
+        return "fetch_vendorCategory_details" if id_count > 0 else "no_vendorCategory_id"
+    # Define a target task for the "do nothing" branch (best practice)
+    no_vendorCategory_id = EmptyOperator(task_id="no_vendorCategory_id")
+
+    #vendorCategory flow
+    vendorCategory_id = fetch_vendorCategory_ids_task()
+    decision = decide_vendorCategory_processing_path(vendorCategory_id)
+    decision >> [fetch_vendorCategory_details_task(), no_vendorCategory_id]
+
+    #vendorBill flow
+    vendorBill_id = fetch_vendorBill_ids_task()
+    decision = decide_vendorBill_processing_path(vendorBill_id)
+    decision >> [fetch_vendorBill_details_task(), no_vendorBill_id]
+
+    #vendor flow
+    vendor_id = fetch_vendor_ids_task()
+    decision = decide_vendor_processing_path(vendor_id)
+    decision >> [fetch_vendor_details_task(), no_vendor_id]
+
+    #transfer order flow
+    transfer_order_id = fetch_transferOrder_ids_task()
+    decision = decide_transferOrder_processing_path(transfer_order_id)
+    decision >> [fetch_transferOrder_details_task(), no_transferOrder_id]
+    #subsidiary flow
+    subsidiary_ids = fetch_subsidiary_ids_task()
+    decision = decide_subsidiary_processing_path(subsidiary_ids)
+    decision >> [fetch_subsidiary_details_task(), no_subsidiary_id]
+
+    #location flow
+    location_ids = fetch_location_ids_task()
+    decision = decide_location_processing_path(location_ids)
+    decision >> [fetch_location_details_task(), no_location_id]
+
+    #item receipt flow
+    item_receipt_ids = fetch_itemReceipt_ids_task()
+    decision = decide_itemReceipt_processing_path(item_receipt_ids)
+    decision >> [fetch_itemReceipt_details_task(), no_itemReceipt_id]
+
+    #item fulfillment flow
+    item_fulfillment_ids = fetch_itemfulfillment_ids_task()
+    decision = decide_itemfulfillment_processing_path(item_fulfillment_ids)
+    decision >> [fetch_itemfulfillment_details_task(), no_itemfulfillment_id]
+
+    #invoice flow
+    invoice_ids = fetch_invoice_ids_task()
+    decision = decide_invoice_processing_path(invoice_ids)
+    decision >> [fetch_invoice_details_task(), no_invoice_id]
+
+    #intercompanyTransferOrder flow
+    intercompanyTransferOrder_ids = fetch_intercompanyTransferOrder_ids_task()
+    decision = decide_intercompanyTransferOrder_processing_path(intercompanyTransferOrder_ids)
+    decision >> [fetch_intercompanyTransferOrder_details_task(), no_intercompanyTransferOrder_id]
+
     #department flow
     department_ids = fetch_department_ids_task()
     decision = decide_department_processing_path(department_ids)
@@ -712,7 +1363,27 @@ def netsuite_pipeline():
     decision = decide_sales_orders_processing_path(sales_order_ids)
     decision >> [fetch_sales_orders_details_task(), no_sales_orders_id]
 
-    start >> [inventory_item_ids,customer_ids,inventory_number_ids,inventory_transfer_ids,inventory_count_ids,purchase_order_ids,sales_order_ids,account_ids,assembly_item_ids,department_ids]
+    start >> [inventory_item_ids,
+              customer_ids
+              ,inventory_number_ids
+              ,inventory_transfer_ids
+              ,inventory_count_ids
+              ,purchase_order_ids
+              ,sales_order_ids
+              ,account_ids
+              ,assembly_item_ids
+              ,department_ids
+              ,intercompanyTransferOrder_ids
+              ,invoice_ids
+              ,item_fulfillment_ids
+              ,item_receipt_ids
+              ,location_ids
+              ,subsidiary_ids
+              ,transfer_order_id
+              ,vendor_id
+              ,vendorBill_id
+              ,vendorCategory_id
+              ]
 
 # Instantiate the DAG
 netsuite_dag = netsuite_pipeline()
