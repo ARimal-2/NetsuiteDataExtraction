@@ -95,7 +95,7 @@ async def fetch_resource(url, resource_name):
         next_url = next_links[0] if next_links else None
 
     logger.info(f"Total {len(all_items)} vendorCategory fetched")
-    resource_data = all_items[:10]
+    resource_data = all_items[:200]
     # Save fetched data and metadata
     await save_outputs_and_metadata(resource_name, resource_data, log_dir, outer_logs_dir, now, id_file_path)
     # Extract and return IDs directly

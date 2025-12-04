@@ -15,111 +15,124 @@ from dotenv import load_dotenv
 import os
 from oauthlib.oauth1 import Client
 
-# Load environment variables
-load_dotenv()
+from utils.rate_limiter import global_throttle
+# --------------------------
+# ---
+# Settings
+# -----------------------------
+MAX_CONCURRENCY = 2        # max parallel requests
+MAX_RETRIES = 3                # max retries per request
+BASE_BACKOFF = 2               # initial backoff in seconds
 
-# -------------------------------------------------------
-# Fetch from NetSuite API
-# -------------------------------------------------------
-async def fetch_resource_data(url, logger):
-    """Fetch data from NetSuite API using signed OAuth1 headers."""
-    try:
-        headers = get_netsuite_headers(url, method="GET")
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=headers) as resp:
-                resp.raise_for_status()
+semaphore = asyncio.Semaphore(MAX_CONCURRENCY)
 
-                # Try JSON parse
+
+# -----------------------------
+# Fetch data with retries/backoff
+# -----------------------------
+async def fetch_resource_data(url, logger, session):
+    """
+    Fetch NetSuite data with retries, exponential backoff, and concurrency control.
+    """
+    async with semaphore:
+        async with global_throttle:
+            for attempt in range(1, MAX_RETRIES + 1):
                 try:
-                    data = await resp.json()
-                except Exception:
-                    text = await resp.text()
-                    logger.error(f"Failed to parse JSON: {text}")
-                    return {}
+                    headers = get_netsuite_headers(url, method="GET")
+                    async with session.get(url, headers=headers) as resp:
+                        resp.raise_for_status()
+                        try:
+                            data = await resp.json()
+                            logger.info(f"fetched {len(data)} records from {url}")
 
-                return data if isinstance(data, dict) else {}
+                        except Exception:
+                            
+                            logger.error(f"Failed to parse JSON")
 
-    except aiohttp.ClientResponseError as e:
-        logger.error(f"HTTP error {e.status}: {e.message} | URL={url}")
-        raise
+                        return data if isinstance(data, dict) else {}
 
-    except aiohttp.ClientError as e:
-        logger.error(f"HTTP client error: {e} | URL={url}")
-        raise
+                except (aiohttp.ClientError, aiohttp.ClientResponseError) as e:
+                    wait_time = BASE_BACKOFF ** attempt
+                    logger.warning(
+                        f"Attempt {attempt}/{MAX_RETRIES} failed for {url}: {e}. Retrying in {wait_time}s..."
+                    )
+                    await asyncio.sleep(wait_time)
 
-    except Exception as e:
-        logger.error(f"Unexpected error: {e} | URL={url}")
-        raise
+                except Exception as e:
+                    logger.error(f"Unexpected error for {url}: {e}")
+                    raise
+
+            # After all retries failed
+            logger.error(f"All {MAX_RETRIES} retries failed for {url}")
+            return {}
 
 
 # -------------------------------------------------------
 # Main dynamic resource fetcher
 # -------------------------------------------------------
-async def fetch_resource(url, resource_name, item_ids):
-    """Fetch inventory id records from NetSuite (no linked-field expansion)."""
+async def fetch_resource(url_template, resource_name, count_ids):
+    """
+    Fetch multiple inventory itemss concurrently with pagination.
+    """
     logger = logging.getLogger(resource_name)
+
     now = datetime.now(timezone.utc)
     outer_logs_dir, log_dir, _, logger = setup_extraction_environment(resource_name, now)
 
-    # Use provided inventory id IDs list
-    if not item_ids:
-        logger.warning("inventory id ID list is empty")
-        return resource_name, [], item_ids
+    if not count_ids:
+        logger.warning("inventory item ID list is empty")
+        return resource_name, [], count_ids
 
     all_items = []
 
-    # ---------------------------------------------------
-    # Loop through each ID and fetch info
-    # ---------------------------------------------------
-    for item_id in item_ids:
-        next_url = url.replace("{id}", str(item_id))
+    async with aiohttp.ClientSession() as session:
 
-        while next_url:
-            try:
-                data = await fetch_resource_data(next_url, logger)
-            except Exception:
-                logger.warning(f"Skipping inventory id {item_id} due to fetch error.")
-                break
+        async def fetch_inventory_number(c_id):
+            all_inventory_number = []
+            next_url = url_template.replace("{id}", str(c_id))
 
-            # Items can be a list or a single object
-            if "items" in data:
-                items = data["items"]
-            elif "id" in data:
-                items = [data]
+            while next_url:
+                data = await fetch_resource_data(next_url, logger, session)
+
+                
+                # Handle response
+                if "items" in data:
+                    items = data["items"]
+                elif "id" in data:
+                    items = [data]
+                else:
+                    items = []
+
+                logger.info(f"Fetched {len(items)} items for inventory item ID {c_id} from {next_url}")
+                all_inventory_number.extend(items)
+
+                # Pagination
+                next_links = [link["href"] for link in data.get("links", []) if link.get("rel") == "next"]
+                next_url = next_links[0] if next_links else None
+
+            return all_inventory_number
+
+        # Launch all inventory items fetches concurrently
+        tasks = [fetch_inventory_number(c_id) for c_id in count_ids]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        for r in results:
+            if isinstance(r, Exception):
+                logger.error(f"Error in inventory items task: {r}")
             else:
-                items = []
-
-            all_items.extend(items)
-            logger.info(f"Fetched {len(items)} items for inventory id {item_id}")
-
-            # Pagination handling
-            next_links = [
-                link["href"] 
-                for link in data.get("links", []) 
-                if link.get("rel") == "next"
-            ]
-            next_url = next_links[0] if next_links else None
+                all_items.extend(r)
 
     logger.info(f"TOTAL {len(all_items)} {resource_name} records fetched")
 
-    # ---------------------------------------------------
-    # Save results + logs + metadata
-    # ---------------------------------------------------
-    await save_outputs_and_metadata(
-        resource_name,
-        all_items,
-        log_dir,
-        outer_logs_dir,
-        now,
-        None
-    )
+    # Save results + metadata
+    await save_outputs_and_metadata(resource_name, all_items, log_dir, outer_logs_dir, now, None)
 
-    return resource_name, all_items, item_ids
+    return resource_name, all_items, count_ids
 
 
 # -------------------------------------------------------
 # Entry for inventory id list
 # -------------------------------------------------------
-async def list_inventory_count(item_id):
-    """Entry point to fetch all inventory count ids using provided ID list."""
-    return await fetch_resource( INVENTORY_COUNT_DETAILS_URL, "list_inventory_count", item_id)
+async def list_inventory_count(count_ids):
+    """Entry point to fetch all inventory ids using provided ID list."""
+    return await fetch_resource( INVENTORY_COUNT_DETAILS_URL, "list_inventory_count", count_ids)

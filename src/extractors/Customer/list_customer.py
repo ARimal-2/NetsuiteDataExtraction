@@ -10,17 +10,15 @@ from src.extractors.utils import (
 )
 from utils.headers import get_netsuite_headers
 from urls import Customer_URL
+from utils.rate_limiter import global_throttle
 
-# --------------------------
-# ---
-# Settings
-# -----------------------------
-MAX_CONCURRENCY = 10           # max parallel requests
+
+MAX_CONCURRENCY = 2    # max parallel requests per task
 MAX_RETRIES = 3                # max retries per request
 BASE_BACKOFF = 2               # initial backoff in seconds
 
+# Per-task concurrency
 semaphore = asyncio.Semaphore(MAX_CONCURRENCY)
-
 
 # -----------------------------
 # Fetch data with retries/backoff
@@ -29,34 +27,32 @@ async def fetch_resource_data(url, logger, session):
     """
     Fetch NetSuite data with retries, exponential backoff, and concurrency control.
     """
-    async with semaphore:
-        for attempt in range(1, MAX_RETRIES + 1):
-            try:
-                headers = get_netsuite_headers(url, method="GET")
-                async with session.get(url, headers=headers) as resp:
-                    resp.raise_for_status()
-                    try:
-                        data = await resp.json()
-                    except Exception:
-                        
-                        logger.error(f"Failed to parse JSON")
+    async with semaphore:  
+        async with global_throttle: 
+            for attempt in range(1, MAX_RETRIES + 1):
+                try:
+                    headers = get_netsuite_headers(url, method="GET")
+                    async with session.get(url, headers=headers) as resp:
+                        resp.raise_for_status()
+                        try:
+                            data = await resp.json()
+                        except Exception:
+                            logger.error(f"Failed to parse JSON")
+                        return data if isinstance(data, dict) else {}
 
-                    return data if isinstance(data, dict) else {}
+                except (aiohttp.ClientError, aiohttp.ClientResponseError) as e:
+                    wait_time = BASE_BACKOFF ** attempt
+                    logger.warning(
+                        f"Attempt {attempt}/{MAX_RETRIES} failed for {url}: {e}. Retrying in {wait_time}s..."
+                    )
+                    await asyncio.sleep(wait_time)
 
-            except (aiohttp.ClientError, aiohttp.ClientResponseError) as e:
-                wait_time = BASE_BACKOFF ** attempt
-                logger.warning(
-                    f"Attempt {attempt}/{MAX_RETRIES} failed for {url}: {e}. Retrying in {wait_time}s..."
-                )
-                await asyncio.sleep(wait_time)
+                except Exception as e:
+                    logger.error(f"Unexpected error for {url}: {e}")
+                    raise
 
-            except Exception as e:
-                logger.error(f"Unexpected error for {url}: {e}")
-                raise
-
-        # After all retries failed
-        logger.error(f"All {MAX_RETRIES} retries failed for {url}")
-        return {}
+            logger.error(f"All {MAX_RETRIES} retries failed for {url}")
+            return {}
 
 
 # -----------------------------
@@ -93,12 +89,15 @@ async def fetch_resource(url_template, resource_name, customer_ids):
                     items = [data]
                 else:
                     items = []
+                
 
                 items_for_customer.extend(items)
+                logger.info(f"Fetched {len(items)} items for customer ID {cust_id} from {next_url}")
 
                 # Pagination
                 next_links = [link["href"] for link in data.get("links", []) if link.get("rel") == "next"]
                 next_url = next_links[0] if next_links else None
+                logger.info(f"Fetched {len(items)} items for assembly item ID {cust_id} from {next_url}")
 
             return items_for_customer
 

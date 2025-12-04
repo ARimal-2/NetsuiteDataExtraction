@@ -419,7 +419,7 @@ def netsuite_pipeline():
 
             if id_list:
                 r.rpush("purchase_orders_id_queue", *id_list)
-                print(f"Pushed {len(id_list)} inventory count IDs to Redis queue")
+                print(f"Pushed {len(id_list)} purchase orders IDs to Redis queue")
             if resource_data:
                 asyncio.run(safe_upload(resource_data, resource_name))
             else:
@@ -444,16 +444,16 @@ def netsuite_pipeline():
                 all_ids.append(cust_id.decode('utf-8'))
             
             # The previous task ensures all_ids is not empty if this runs.
-            logger.info(f"Loaded {len(all_ids)} inventory count IDs from Redis queue")
+            logger.info(f"Loaded {len(all_ids)} purchase order IDs from Redis queue")
 
-            resource_name, data, _ = asyncio.run(list_purchase_order(all_ids))
+            resource_name, data = asyncio.run(list_purchase_order(all_ids))
             if data:
                 asyncio.run(safe_upload(data, resource_name))
             else:
-                logger.warning("inventory count returned no data")
+                logger.warning("purchase order returned no data")
         
         except Exception as e:
-            logger.error(f"fetch inventory counts details failed: {e}", exc_info=True)
+            logger.error(f"fetch purchase orders details failed: {e}", exc_info=True)
             raise
     @task.branch(task_id="decide_purchase_orders_processing_path")
     def decide_purchase_orders_processing_path(id_count: int) -> str:
@@ -475,7 +475,7 @@ def netsuite_pipeline():
 
             if id_list:
                 r.rpush("sales_orders_id_queue", *id_list)
-                print(f"Pushed {len(id_list)} inventory count IDs to Redis queue")
+                print(f"Pushed {len(id_list)} sales order IDs to Redis queue")
             if resource_data:
                 asyncio.run(safe_upload(resource_data, resource_name))
             else:
@@ -500,16 +500,16 @@ def netsuite_pipeline():
                 all_ids.append(cust_id.decode('utf-8'))
             
             # The previous task ensures all_ids is not empty if this runs.
-            logger.info(f"Loaded {len(all_ids)} inventory count IDs from Redis queue")
+            logger.info(f"Loaded {len(all_ids)} sales order IDs from Redis queue")
 
-            resource_name, data, _ = asyncio.run(list_sales_order(all_ids))
+            resource_name, data = asyncio.run(list_sales_order(all_ids))
             if data:
                 asyncio.run(safe_upload(data, resource_name))
             else:
-                logger.warning("inventory count returned no data")
+                logger.warning("sales order returned no data")
         
         except Exception as e:
-            logger.error(f"fetch inventory counts details failed: {e}", exc_info=True)
+            logger.error(f"fetch sales orders details failed: {e}", exc_info=True)
             raise
     @task.branch(task_id="decide_sales_orders_processing_path")
     def decide_sales_orders_processing_path(id_count: int) -> str:
@@ -562,10 +562,10 @@ def netsuite_pipeline():
             if data:
                 asyncio.run(safe_upload(data, resource_name))
             else:
-                logger.warning("inventory count returned no data")
+                logger.warning("account returned no data")
         
         except Exception as e:
-            logger.error(f"fetch inventory counts details failed: {e}", exc_info=True)
+            logger.error(f"fetch account details failed: {e}", exc_info=True)
             raise
     @task.branch(task_id="decide_account_processing_path")
     def decide_account_processing_path(id_count: int) -> str:
@@ -1263,7 +1263,7 @@ def netsuite_pipeline():
     # Define a target task for the "do nothing" branch 
     no_vendorCategory_id = EmptyOperator(task_id="no_vendorCategory_id")
 
-    #vendorCategory flow
+    # vendorCategory flow
     vendorCategory_id = fetch_vendorCategory_ids_task()
     decision = decide_vendorCategory_processing_path(vendorCategory_id)
     decision >> [fetch_vendorCategory_details_task(), no_vendorCategory_id]
@@ -1282,6 +1282,7 @@ def netsuite_pipeline():
     transfer_order_id = fetch_transferOrder_ids_task()
     decision = decide_transferOrder_processing_path(transfer_order_id)
     decision >> [fetch_transferOrder_details_task(), no_transferOrder_id]
+
     #subsidiary flow
     subsidiary_ids = fetch_subsidiary_ids_task()
     decision = decide_subsidiary_processing_path(subsidiary_ids)
@@ -1321,7 +1322,8 @@ def netsuite_pipeline():
     assembly_item_ids = fetch_assembly_items_ids_task()
     decision = decide_assembly_items_processing_path(assembly_item_ids)
     decision >> [fetch_assembly_items_details_task(), no_assembly_items_id]
-    #account flow
+
+    # account flow
     account_ids = fetch_account_ids_task()
     decision = decide_account_processing_path(account_ids)
     decision >> [fetch_account_details_task(), no_account_id]
@@ -1363,15 +1365,16 @@ def netsuite_pipeline():
     decision = decide_sales_orders_processing_path(sales_order_ids)
     decision >> [fetch_sales_orders_details_task(), no_sales_orders_id]
 
-    start >> [inventory_item_ids,
+    start >> [
+                inventory_item_ids,
               customer_ids
               ,inventory_number_ids
               ,inventory_transfer_ids
               ,inventory_count_ids
               ,purchase_order_ids
               ,sales_order_ids
-              ,account_ids
-              ,assembly_item_ids
+              ,account_ids,
+              assembly_item_ids
               ,department_ids
               ,intercompanyTransferOrder_ids
               ,invoice_ids

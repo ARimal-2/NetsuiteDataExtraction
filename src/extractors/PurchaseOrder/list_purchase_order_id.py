@@ -22,7 +22,7 @@ def extract_ids(resource_data, logger):
     """
     try:
         id_list = [item["id"] for item in resource_data if isinstance(item, dict) and "id" in item]
-        logger.info(f"Extracted {len(id_list)} customer IDs")
+        logger.info(f"Extracted {len(id_list)} purchase order IDs")
         return id_list
     except Exception as e:
         logger.error(f"Error extracting IDs: {e}")
@@ -95,7 +95,7 @@ async def fetch_resource(url, resource_name):
         next_url = next_links[0] if next_links else None
 
     logger.info(f"Total {len(all_items)} purchase order fetched")
-    resource_data = all_items[:10]
+    resource_data = all_items[:200]
     # Save fetched data and metadata
     await save_outputs_and_metadata(resource_name, resource_data, log_dir, outer_logs_dir, now, id_file_path)
     # Extract and return IDs directly

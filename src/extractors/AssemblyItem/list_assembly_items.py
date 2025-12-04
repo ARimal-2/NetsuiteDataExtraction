@@ -10,12 +10,12 @@ from src.extractors.utils import (
 )
 from utils.headers import get_netsuite_headers
 from urls import ASSEMBLY_ITEM_DETAILS_URL
-
+from utils.rate_limiter import global_throttle
 # --------------------------
 # ---
 # Settings
 # -----------------------------
-MAX_CONCURRENCY = 10           # max parallel requests
+MAX_CONCURRENCY = 2        # max parallel requests
 MAX_RETRIES = 3                # max retries per request
 BASE_BACKOFF = 2               # initial backoff in seconds
 
@@ -30,43 +30,44 @@ async def fetch_resource_data(url, logger, session):
     Fetch NetSuite data with retries, exponential backoff, and concurrency control.
     """
     async with semaphore:
-        for attempt in range(1, MAX_RETRIES + 1):
-            try:
-                headers = get_netsuite_headers(url, method="GET")
-                async with session.get(url, headers=headers) as resp:
-                    resp.raise_for_status()
-                    try:
-                        data = await resp.json()
-                    except Exception:
-                        
-                        logger.error(f"Failed to parse JSON")
+        async with global_throttle:
+            for attempt in range(1, MAX_RETRIES + 1):
+                try:
+                    headers = get_netsuite_headers(url, method="GET")
+                    async with session.get(url, headers=headers) as resp:
+                        resp.raise_for_status()
+                        try:
+                            data = await resp.json()
+                        except Exception:
+                            
+                            logger.error(f"Failed to parse JSON")
 
-                    return data if isinstance(data, dict) else {}
+                        return data if isinstance(data, dict) else {}
 
-            except (aiohttp.ClientError, aiohttp.ClientResponseError) as e:
-                wait_time = BASE_BACKOFF ** attempt
-                logger.warning(
-                    f"Attempt {attempt}/{MAX_RETRIES} failed for {url}: {e}. Retrying in {wait_time}s..."
-                )
-                await asyncio.sleep(wait_time)
+                except (aiohttp.ClientError, aiohttp.ClientResponseError) as e:
+                    wait_time = BASE_BACKOFF ** attempt
+                    logger.warning(
+                        f"Attempt {attempt}/{MAX_RETRIES} failed for {url}: {e}. Retrying in {wait_time}s..."
+                    )
+                    await asyncio.sleep(wait_time)
 
-            except Exception as e:
-                logger.error(f"Unexpected error for {url}: {e}")
-                raise
+                except Exception as e:
+                    logger.error(f"Unexpected error for {url}: {e}")
+                    raise
 
-        # After all retries failed
-        logger.error(f"All {MAX_RETRIES} retries failed for {url}")
-        return {}
-
+            # After all retries failed
+            logger.error(f"All {MAX_RETRIES} retries failed for {url}")
+            return {}
 
 # -----------------------------
 # Fetch all resources concurrently
 # -----------------------------
 async def fetch_resource(url_template, resource_name, assem_ids):
     """
-    Fetch multiple customers concurrently with pagination.
+    Fetch multiple assembly itemss concurrently with pagination.
     """
     logger = logging.getLogger(resource_name)
+
     now = datetime.now(timezone.utc)
     outer_logs_dir, log_dir, _, logger = setup_extraction_environment(resource_name, now)
 
@@ -76,7 +77,6 @@ async def fetch_resource(url_template, resource_name, assem_ids):
 
     all_items = []
 
-    # Reuse a single session for efficiency
     async with aiohttp.ClientSession() as session:
 
         async def fetch_assembly_items(assem_id):
@@ -85,6 +85,7 @@ async def fetch_resource(url_template, resource_name, assem_ids):
 
             while next_url:
                 data = await fetch_resource_data(next_url, logger, session)
+
                 
                 # Handle response
                 if "items" in data:
@@ -93,7 +94,7 @@ async def fetch_resource(url_template, resource_name, assem_ids):
                     items = [data]
                 else:
                     items = []
-
+                logger.info(f"Fetched {len(items)} items for assembly item ID {assem_id} from {next_url}")
                 all_assembly_items.extend(items)
 
                 # Pagination
@@ -102,13 +103,13 @@ async def fetch_resource(url_template, resource_name, assem_ids):
 
             return all_assembly_items
 
-        # Launch all customer fetches concurrently
+        # Launch all assembly items fetches concurrently
         tasks = [fetch_assembly_items(assem_id) for assem_id in assem_ids]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         for r in results:
             if isinstance(r, Exception):
-                logger.error(f"Error in customer task: {r}")
+                logger.error(f"Error in assembly items task: {r}")
             else:
                 all_items.extend(r)
 
@@ -121,8 +122,8 @@ async def fetch_resource(url_template, resource_name, assem_ids):
 
 
 # -----------------------------
-# Entry point for customer list
+# Entry point for assembly items list
 # -----------------------------
 async def list_assembly_items(assem_ids):
     """Fetch all assembly item given the list of IDs"""
-    return await fetch_resource(ASSEMBLY_ITEM_DETAILS_URL, "list_assembly_items_id", assem_ids)
+    return await fetch_resource(ASSEMBLY_ITEM_DETAILS_URL, "list_assembly_items", assem_ids)
