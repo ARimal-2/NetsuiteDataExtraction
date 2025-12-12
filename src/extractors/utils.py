@@ -12,16 +12,10 @@ from logs.extractionlogger import (
 import logging
 
 # src/extractors/utils.py
-import logging
 from datetime import datetime
 import os
-import logging
 from pathlib import Path
 from datetime import datetime
-
-
-import logging
-import os
 from logging.handlers import TimedRotatingFileHandler
 
 def setup_queue_logger(resource_name: str, mode: str) -> logging.Logger:
@@ -88,7 +82,6 @@ def get_extraction_dates(outer_logs_dir, resource_name, now):
             last_extracted = None
     
     return last_extracted, modified_date_end
-
 
 
 

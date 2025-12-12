@@ -67,8 +67,8 @@ from src.extractors.vendor.list_vendor import list_vendor_details
 from src.extractors.vendor.list_vendor_id import list_vendor_id
 
 
-from src.extractors.vendorBill.list_vendor_id import list_vendorBill_id
-from src.extractors.vendorBill.list_vendor import list_vendorBill_details
+from extractors.vendorBill.list_vendorBill_id import list_vendorBill_id
+from extractors.vendorBill.list_vendorBill import list_vendorBill_details
 
 from src.extractors.vendorCategory.list_vendorCategory_id import list_vendorCategory_id
 from src.extractors.vendorCategory.list_vendorCategory import list_vendorCategory_details
@@ -1345,12 +1345,12 @@ def netsuite_pipeline():
     decision = decide_inventory_number_processing_path(inventory_number_ids)
     decision >> [fetch_inventory_number_details_task(), no_inventory_numbers_id]
     
-    ## Inventory Number flow
+    # Inventory Number flow
     inventory_transfer_ids = fetch_inventory_transfer_ids_task()
     decision = decide_inventory_transfer_processing_path(inventory_transfer_ids)
     decision >> [fetch_inventory_transfer_details_task(), no_inventory_transfers_id]
     
-    ## Inventory Count flow
+    # Inventory Count flow
     inventory_count_ids = fetch_inventory_count_ids_task()
     decision = decide_inventory_count_processing_path(inventory_count_ids)
     decision >> [fetch_inventory_count_details_task(), no_inventory_counts_id]
