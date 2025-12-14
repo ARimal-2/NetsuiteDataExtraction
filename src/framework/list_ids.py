@@ -89,12 +89,13 @@ async def fetch_all_ids(url, resource_name):
 
     logger.info(f"Total {len(all_items)} {resource_name} records fetched")
 
+    limited_data = all_items
  
 
     # Save metadata
-    await save_outputs_and_metadata(resource_name, all_items, log_dir, outer_logs_dir, now, id_file_path)
+    await save_outputs_and_metadata(resource_name, limited_data, log_dir, outer_logs_dir, now, id_file_path)
 
     # Extract IDs
-    id_list = extract_ids(all_items, logger)
+    id_list = extract_ids(limited_data, logger)
 
-    return resource_name, id_list, all_items
+    return resource_name, id_list, limited_data
