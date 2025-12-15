@@ -46,8 +46,8 @@ jobs:
             # echo "${REGISTRY_PASSWORD}" | docker login -u "${REGISTRY_USERNAME}" --password-stdin myregistry.example.com
 
             # Pull/build and restart containers
-            docker compose pull || true
-            docker compose build --no-cache
-            docker compose up -d
+            docker-compose pull || true
+            docker-compose build --no-cache
+            docker-compose up -d
 
             # Health check            # Health check (example)
