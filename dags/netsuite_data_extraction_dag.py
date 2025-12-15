@@ -34,6 +34,7 @@ default_args = {
     start_date=datetime(2024, 1, 1),
     schedule="*/5 * * * *",
     default_args=default_args,
+    is_paused_upon_creation=False,
     catchup=False,
 )
 def netsuite_pipeline():
