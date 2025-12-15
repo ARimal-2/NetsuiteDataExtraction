@@ -32,7 +32,7 @@ default_args = {
 @dag(
     dag_id="netsuite_pipeline",
     start_date=datetime(2024, 1, 1),
-    schedule="0 */6 * * *",
+    schedule="*/5 * * * *",
     default_args=default_args,
     catchup=False,
 )
