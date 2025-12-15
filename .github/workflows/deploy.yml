@@ -1,0 +1,53 @@
+
+name: Deploy Netsuite Extractor (Docker)
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Ensure SSH secrets exist (debug only; consider removing later)
+        run: |
+          echo "SERVER_IP set? -> ${{ secrets.SERVER_IP != '' }}"
+          echo "SERVER_USER set? -> ${{ secrets.SERVER_USER != '' }}"
+          echo "SERVER_SSH_KEY set? -> ${{ secrets.SERVER_SSH_KEY != '' }}"
+
+      - name: Copy repo to server (rsync)
+        uses: burnett01/rsync-deployments@7.0.0
+        with:
+          switches: -avz --delete --exclude='.git' --exclude='.github'
+          path: ./        # local repo root
+          remote_path: /root/netsuiteapi/NetsuiteDataExtraction/
+          remote_host: ${{ secrets.SERVER_IP }}
+          remote_user: ${{ secrets.SERVER_USER }}
+          remote_key: ${{ secrets.SERVER_SSH_KEY }}
+
+      - name: Deploy via Docker Compose
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: 22
+          script: |
+            set -euo pipefail
+            cd /root/netsuiteapi/NetsuiteDataExtraction
+
+       
+            # Login to registry if needed (uncomment if private registry)
+            # echo "${REGISTRY_PASSWORD}" | docker login -u "${REGISTRY_USERNAME}" --password-stdin myregistry.example.com
+
+            # Pull/build and restart containers
+            docker compose pull || true
+            docker compose build --no-cache
+            docker compose up -d
+
+            # Health check            # Health check (example)
