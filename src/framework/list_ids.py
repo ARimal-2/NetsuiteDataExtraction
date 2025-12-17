@@ -153,17 +153,16 @@ async def fetch_all_ids(url, resource_name):
     )
 
  
-    limited_data = all_items[:1000]
 
     await save_outputs_and_metadata(
         resource_name,
-        limited_data,
+        all_items,
         log_dir,
         outer_logs_dir,
         now,
         id_file_path,
     )
 
-    id_list = extract_ids(limited_data, logger)
+    id_list = extract_ids(all_items, logger)
 
-    return resource_name, id_list, limited_data
+    return resource_name, id_list, all_items
