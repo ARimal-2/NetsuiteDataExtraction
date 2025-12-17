@@ -13,13 +13,30 @@ from src.extractors.utils import (
 )
 
 
-async def fetch_resource_data(url, logger):
-    """Fetch data from NetSuite with error handling."""
-    try:
-        headers = get_netsuite_headers(url, method="GET")
+RETRYABLE_STATUS_CODES = {401, 429, 500, 502, 503, 504}
 
-        async with aiohttp.ClientSession() as session:
+async def fetch_resource_data(session, url, logger, max_retries=5, base_delay=1.0):
+    """
+    Fetch data from NetSuite with retry logic.
+    OAuth headers are regenerated per attempt.
+    """
+    attempt = 0
+
+    while True:
+        try:
+            headers = get_netsuite_headers(url, method="GET")
+
             async with session.get(url, headers=headers) as resp:
+                if resp.status in RETRYABLE_STATUS_CODES:
+                    text = await resp.text()
+                    raise aiohttp.ClientResponseError(
+                        request_info=resp.request_info,
+                        history=resp.history,
+                        status=resp.status,
+                        message=text,
+                        headers=resp.headers,
+                    )
+
                 resp.raise_for_status()
 
                 try:
@@ -27,17 +44,39 @@ async def fetch_resource_data(url, logger):
                 except Exception:
                     text = await resp.text()
                     logger.error(f"Failed to parse JSON: {text}")
-                    return {}
+                    raise
 
                 return validate_json(data, logger)
 
-    except aiohttp.ClientError as e:
-        logger.error(f"HTTP error: {e}")
-        return {}
+        except aiohttp.ClientResponseError as e:
+            attempt += 1
 
-    except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        return {}
+            if attempt > max_retries:
+                logger.error(
+                    f"Max retries exceeded for {url} (status={e.status})"
+                )
+                raise
+
+            delay = base_delay * (2 ** (attempt - 1))
+            logger.warning(
+                f"Retry {attempt}/{max_retries} for {url} "
+                f"(status={e.status}), sleeping {delay:.1f}s"
+            )
+            await asyncio.sleep(delay)
+
+        except aiohttp.ClientError as e:
+            attempt += 1
+
+            if attempt > max_retries:
+                logger.error(f"Network retries exhausted for {url}: {e}")
+                raise
+
+            delay = base_delay * (2 ** (attempt - 1))
+            logger.warning(
+                f"Network error retry {attempt}/{max_retries} "
+                f"sleeping {delay:.1f}s: {e}"
+            )
+            await asyncio.sleep(delay)
 
 
 def build_incremental_url(base_url, last_timestamp, logger):
@@ -47,7 +86,6 @@ def build_incremental_url(base_url, last_timestamp, logger):
         return base_url
 
     ns_date = to_netsuite_display(last_timestamp, logger)
-
     if not ns_date:
         return base_url
 
@@ -67,35 +105,65 @@ async def fetch_all_ids(url, resource_name):
     logger = logging.getLogger(resource_name)
 
     now = datetime.now(timezone.utc)
-    outer_logs_dir, log_dir, id_file_path, logger = setup_extraction_environment(resource_name, now)
+    outer_logs_dir, log_dir, id_file_path, logger = (
+        setup_extraction_environment(resource_name, now)
+    )
 
-    last_extracted, _ = get_extraction_dates(outer_logs_dir, resource_name, now)
+    last_extracted, _ = get_extraction_dates(
+        outer_logs_dir, resource_name, now
+    )
 
-    # Build incremental URL
     next_url = build_incremental_url(url, last_extracted, logger)
 
     all_items = []
 
-    while next_url:
-        data = await fetch_resource_data(next_url, logger)
-        items = data.get("items", [])
-        all_items.extend(items)
+    timeout = aiohttp.ClientTimeout(total=None)
 
-        logger.info(f"Fetched {len(items)} items from {next_url}")
+   
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        while next_url:
+            data = await fetch_resource_data(
+                session=session,
+                url=next_url,
+                logger=logger,
+                max_retries=5,
+                base_delay=1.0,
+            )
 
-        # Pagination
-        next_links = [link["href"] for link in data.get("links", []) if link.get("rel") == "next"]
-        next_url = next_links[0] if next_links else None
+            items = data.get("items", [])
+            all_items.extend(items)
 
-    logger.info(f"Total {len(all_items)} {resource_name} records fetched")
+            logger.info(
+                f"Fetched {len(items)} items from {next_url}"
+            )
 
-    limited_data = all_items
+            # Pagination
+            next_links = [
+                link["href"]
+                for link in data.get("links", [])
+                if link.get("rel") == "next"
+            ]
+            next_url = next_links[0] if next_links else None
+
+         
+            await asyncio.sleep(0.4)
+
+    logger.info(
+        f"Total {len(all_items)} {resource_name} records fetched"
+    )
+
  
+    limited_data = all_items[:1000]
 
-    # Save metadata
-    await save_outputs_and_metadata(resource_name, limited_data, log_dir, outer_logs_dir, now, id_file_path)
+    await save_outputs_and_metadata(
+        resource_name,
+        limited_data,
+        log_dir,
+        outer_logs_dir,
+        now,
+        id_file_path,
+    )
 
-    # Extract IDs
     id_list = extract_ids(limited_data, logger)
 
     return resource_name, id_list, limited_data
