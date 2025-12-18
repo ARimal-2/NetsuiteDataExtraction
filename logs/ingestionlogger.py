@@ -1,7 +1,7 @@
 import os
 import logging
 import json
-from datetime import datetime
+from datetime import datetime,timezone
 from src.s3uploader.connect import connect_to_cos
 
 # def setup_logging_for_url(resource_name):
@@ -34,10 +34,9 @@ from src.s3uploader.connect import connect_to_cos
 
 # logs/ingestionlogger.py
 def setup_logging_for_url(resource_name):
-    from datetime import datetime
-    import os, logging
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+
     outer_logs_dir = os.path.join("logs", "ingestion", resource_name)
     os.makedirs(outer_logs_dir, exist_ok=True)
 
