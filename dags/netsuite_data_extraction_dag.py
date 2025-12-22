@@ -43,31 +43,31 @@ def netsuite_pipeline():
     start = EmptyOperator(task_id="start")
 
     #customer
-    cust_ids = customer_flow(r)
+#    cust_ids = customer_flow(r)
 
     # AssemblyItems
-    assem_ids = assembly_item_flow(r)
+ #   assem_ids = assembly_item_flow(r)
 
     #Department
-    dept_ids = department_flow(r)
-    
+  #  dept_ids = department_flow(r)
+
     #inventoryCountFlow
-    invCount_ids = inventory_count_flow(r)
+   # invCount_ids = inventory_count_flow(r)
 
     #accounts
-    acc_ids = account_flow(r)
+    #acc_ids = account_flow(r)
 
     #interCompanyTransferOrder
-    ICTO_ids = interCompanyTransferOrder_flow(r)
+    #ICTO_ids = interCompanyTransferOrder_flow(r)
 
     #inventoryItem
     InvItem_ids = InventoryItem_flow(r)
 
     #inventoryNumber
-    InvNum_ids = inventoryNumber_flow(r)
+    #InvNum_ids = inventoryNumber_flow(r)
 
     #inventoryTransfer
-    invTrans_ids = inventoryTransfer_flow(r)
+    #invTrans_ids = inventoryTransfer_flow(r)
 
     itemRec_ids = itemReceipt_flow(r)
 
@@ -75,57 +75,55 @@ def netsuite_pipeline():
     invoice_ids = invoice_flow(r)
 
     #itemFulfillment
-    itm_full_ids = itemFulfillment_flow(r)
+    #itm_full_ids = itemFulfillment_flow(r)
 
     #location
-    location_ids = location_flow(r)
+    #location_ids = location_flow(r)
 
     #PurchaseOrder
-    PO_ids = PurchaseOrder_flow(r)
+    #PO_ids = PurchaseOrder_flow(r)
 
     #SalesOrder
-    SO_ids = SalesOrder_flow(r)
+    #SO_ids = SalesOrder_flow(r)
 
     #subsidiary
-    subsi_ids = subsidiary_flow(r)
+    #subsi_ids = subsidiary_flow(r)
 
     #transferOrder
-    TO_ids = transferOrder_flow(r)
+    #TO_ids = transferOrder_flow(r)
 
     #vendor
-    vendor_ids = vendor_flow(r)
+    #vendor_ids = vendor_flow(r)
 
     #vendorBill
-    venBill_ids = vendorBill_flow(r)
+    #venBill_ids = vendorBill_flow(r)
 
     #vendorCategory
-    venCat_ids = vendorCategory_flow(r)
+    #venCat_ids = vendorCategory_flow(r)
 
 
 
-    start >> [cust_ids
-              , invCount_ids
-              ,acc_ids,
-              assem_ids,
-              dept_ids,
-              ICTO_ids,
+    start >> [
+#cust_ids
+ #             , invCount_ids
+  #            ,acc_ids,
+   #           assem_ids,
+    #          dept_ids,
+     #         ICTO_ids,
               InvItem_ids,
-              InvNum_ids,
-              invTrans_ids,
+      #        InvNum_ids,
+       #       invTrans_ids,
               itemRec_ids,
               invoice_ids,
-              itm_full_ids,
-              location_ids,
-              PO_ids,
-              SO_ids,
-              subsi_ids,
-              TO_ids,
-              vendor_ids,
-              venBill_ids,
-              venCat_ids
+        #      itm_full_ids,
+         #     location_ids,
+          #    PO_ids,
+           #   SO_ids,
+            #  subsi_ids,
+             # TO_ids,
+              #vendor_ids,
+              #venBill_ids,
+              #venCat_ids
               ]
 
 netsuite_dag = netsuite_pipeline()
-
-
-
