@@ -28,7 +28,7 @@ jobs:
           script: |
             set -euo pipefail
             cd /root/netsuiteapi/NetsuiteDataExtraction
-
+            git config --global --add safe.directory /root/netsuiteapi/NetsuiteDataExtraction
             # Pull latest code from Git
             git reset --hard
             git clean -fd
