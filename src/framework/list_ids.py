@@ -15,7 +15,7 @@ from src.extractors.utils import (
 
 RETRYABLE_STATUS_CODES = {401, 429, 500, 502, 503, 504}
 
-async def fetch_resource_data(session, url, logger, max_retries=5, base_delay=1.0):
+async def fetch_resource_data(session, url, logger, max_retries=5, base_delay=.4):
     """
     Fetch data from NetSuite with retry logic.
     OAuth headers are regenerated per attempt.
@@ -166,3 +166,5 @@ async def fetch_all_ids(url, resource_name):
     id_list = extract_ids(all_items, logger)
 
     return resource_name, id_list, all_items
+
+

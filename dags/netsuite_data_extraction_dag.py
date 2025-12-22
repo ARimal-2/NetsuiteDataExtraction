@@ -32,7 +32,7 @@ default_args = {
 @dag(
     dag_id="netsuite_pipeline",
     start_date=datetime(2024, 1, 1),
-    schedule="*/5 * * * *",
+    schedule="0 */6 * * *",
     default_args=default_args,
     is_paused_upon_creation=False,
     catchup=False,
@@ -126,3 +126,6 @@ def netsuite_pipeline():
               ]
 
 netsuite_dag = netsuite_pipeline()
+
+
+

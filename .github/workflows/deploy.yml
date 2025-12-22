@@ -23,7 +23,13 @@ jobs:
       - name: Copy repo to server (rsync)
         uses: burnett01/rsync-deployments@7.0.0
         with:
-          switches: -avz --delete --exclude='.git' --exclude='.github'
+          switches: >
+            -avz --delete
+            --exclude='.git'
+            --exclude='.github'
+            --exclude='.env'
+            --exclude='logs/'
+           
           path: ./        # local repo root
           remote_path: /root/netsuiteapi/NetsuiteDataExtraction/
           remote_host: ${{ secrets.SERVER_IP }}

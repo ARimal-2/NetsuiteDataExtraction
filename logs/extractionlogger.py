@@ -66,8 +66,8 @@ def setup_logging_for_url(resource_name, timestamp):
         idlist_dir = os.path.join(logs_dir, "idlist")
         os.makedirs(idlist_dir, exist_ok=True)
         id_file_path = os.path.join(idlist_dir, f"{resource_name}_ids.json")
-    
-    return outer_logs_dir, logs_dir, id_file_path
+    log_file_path = os.path.join(logs_dir, f"{resource_name}.log")
+    return outer_logs_dir, logs_dir, id_file_path,log_file_path
 
 
 def save_extraction_metadata(outer_logs_dir, resource_name, total_count,extraction_date, id_file_path):

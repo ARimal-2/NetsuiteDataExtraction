@@ -141,15 +141,10 @@ async def save_outputs_and_metadata(resource_name: str, resource_data: list, log
     await asyncio.to_thread(save_extraction_metadata, outer_logs_dir, resource_name, len(resource_data), extracted_date,id_file_path)
     
 def setup_extraction_environment(resource_name, now):
-    """Set up logging directories and logger for extraction."""
-    outer_logs_dir, logs_dir, id_file_path = setup_logging_for_url(
-        resource_name, now
-    )
-    logger = get_logger(resource_name, logs_dir, now)
-
-
-
+    outer_logs_dir, logs_dir, id_file_path, log_file_path = setup_logging_for_url(resource_name, now)
+    logger = get_logger(resource_name, log_file_path)
     return outer_logs_dir, logs_dir, id_file_path, logger
+
 
 # def setup_extraction_environment(resource_name, now):
 #     """Set up logging directories and logger for extraction."""

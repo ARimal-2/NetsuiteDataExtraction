@@ -14,11 +14,11 @@ def fetch_and_upload(data, resource_name):
     cos, bucket_name = connect_to_cos()
     outer_logs_dir, logs_dir,logger = setup_logging_for_url(resource_name)
 
-    today = datetime.now()
-    date_path = today.strftime("%Y/%m/%d")
-    timestamp = today.strftime("%Y%m%dT%H%M%S")
+    utc_now = datetime.now(timezone.utc)
+    date_path = utc_now.strftime("%Y/%m/%d")
+    timestamp1 = utc_now.strftime("%Y%m%dT%H%M%S")
 
-    object_key = f"Netsuite_Api/{resource_name}/{date_path}/{timestamp}_{resource_name}.json"
+    object_key = f"Netsuite_Api/{resource_name}/{date_path}/{timestamp1}_{resource_name}.json"
     logger.info(f"Starting upload for {resource_name} → bucket: {bucket_name}, key: {object_key}")
 
     # Config for multipart (5 MB parts)

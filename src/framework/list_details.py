@@ -15,7 +15,7 @@ from src.extractors.utils import (
 # -----------------------------
 # Configurable constants
 # -----------------------------
-MAX_CONCURRENCY = 2
+MAX_CONCURRENCY = 5
 MAX_RETRIES = 6          # Increased from 3
 BASE_BACKOFF = 2         # Exponential backoff base
 THROTTLE_SLEEP = 0.15    # Steady-state delay per request
