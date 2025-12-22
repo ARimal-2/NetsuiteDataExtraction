@@ -15,8 +15,7 @@ def get_logger(resource_name: str, logs_dir: str, timestamp: datetime = None):
     """
     timestamp_str = timestamp.strftime("%Y%m%d_%H%M%S") if timestamp else datetime.now().strftime("%Y%m%d_%H%M%S")
     
-    log_file_path = os.path.join(logs_dir, f"{resource_name}.log")
-    os.makedirs(logs_dir, exist_ok=True)
+   
     
     # Create logger
     logger_name = f"{resource_name}_{timestamp_str}"
@@ -27,7 +26,7 @@ def get_logger(resource_name: str, logs_dir: str, timestamp: datetime = None):
     logger.handlers = []
 
     # File handler
-    fh = logging.FileHandler(log_file_path)
+    fh = logging.FileHandler(logs_dir)
     fh.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)
