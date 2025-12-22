@@ -16,7 +16,7 @@ def get_logger(resource_name: str, logs_dir: str, timestamp: datetime = None):
     timestamp_str = timestamp.strftime("%Y%m%d_%H%M%S") if timestamp else datetime.now().strftime("%Y%m%d_%H%M%S")
     
     log_file_path = os.path.join(logs_dir, f"{resource_name}.log")
-    os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
+    os.makedirs(logs_dir, exist_ok=True)
     
     # Create logger
     logger_name = f"{resource_name}_{timestamp_str}"
