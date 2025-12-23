@@ -8,7 +8,9 @@ from src.extractors.inventoryCount.inventory_count_flow import inventory_count_f
 from src.extractors.account.account_flow import account_flow
 from src.extractors.AssemblyItem.assemply_item_flow import assembly_item_flow
 from src.extractors.department.department_flow import department_flow
-from src.extractors.InterCompanyTransferOrder.interCompanyTransferOrder_flow import interCompanyTransferOrder_flow
+from src.extractors.InterCompanyTransferOrder.interCompanyTransferOrder_flow import (
+    interCompanyTransferOrder_flow,
+)
 from src.extractors.InventoryItem.inventort_item_flow import InventoryItem_flow
 from src.extractors.InventoryNumber.inventory_number_flow import inventoryNumber_flow
 from src.extractors.InventoryTransfer.inventoryTransfer_flow import inventoryTransfer_flow
@@ -23,107 +25,75 @@ from src.extractors.vendor.vendor_flow import vendor_flow
 from src.extractors.TransferOrder.transferOrder_flow import transferOrder_flow
 from src.extractors.Subsidiary.subsidiary_flow import subsidiary_flow
 from src.extractors.itemReceipt.itemReceipt_flow import itemReceipt_flow
+
+
+# ------------------------------------------------------------
+# Default args
+# ------------------------------------------------------------
 default_args = {
     "owner": "airflow",
     "retries": 2,
     "retry_delay": timedelta(minutes=3),
+    "execution_timeout": timedelta(hours=2)
 }
 
+
+# ------------------------------------------------------------
+# DAG definition
+# ------------------------------------------------------------
 @dag(
     dag_id="netsuite_pipeline",
     start_date=datetime(2024, 1, 1),
-    schedule="0 */6 * * *",
+    schedule="@weekly",     
     default_args=default_args,
-    is_paused_upon_creation=False,
     catchup=False,
+    is_paused_upon_creation=False,
+    max_active_runs=1,         
+    tags=["netsuite", "etl"],
 )
 def netsuite_pipeline():
 
+    # Redis connection (shared by flows)
     r = redis.Redis(host="redis", port=6379, db=0)
+
     start = EmptyOperator(task_id="start")
 
-    #customer
-#    cust_ids = customer_flow(r)
+  
 
-    # AssemblyItems
- #   assem_ids = assembly_item_flow(r)
+    # cust_ids = customer_flow(r)
+    # invCount_ids = inventory_count_flow(r)
+    # acc_ids = account_flow(r)
+    # assem_ids = assembly_item_flow(r)
+    # dept_ids = department_flow(r)
+    # ICTO_ids = interCompanyTransferOrder_flow(r)
 
-    #Department
-  #  dept_ids = department_flow(r)
+    # InvItem_ids = InventoryItem_flow(r)
 
-    #inventoryCountFlow
-   # invCount_ids = inventory_count_flow(r)
+    # InvNum_ids = inventoryNumber_flow(r)
+    # invTrans_ids = inventoryTransfer_flow(r)
 
-    #accounts
-    #acc_ids = account_flow(r)
-
-    #interCompanyTransferOrder
-    #ICTO_ids = interCompanyTransferOrder_flow(r)
-
-    #inventoryItem
-    InvItem_ids = InventoryItem_flow(r)
-
-    #inventoryNumber
-    #InvNum_ids = inventoryNumber_flow(r)
-
-    #inventoryTransfer
-    #invTrans_ids = inventoryTransfer_flow(r)
-
-    itemRec_ids = itemReceipt_flow(r)
-
-    #invoice
+    # itemRec_ids = itemReceipt_flow(r)
     invoice_ids = invoice_flow(r)
 
-    #itemFulfillment
-    #itm_full_ids = itemFulfillment_flow(r)
+    # itm_full_ids = itemFulfillment_flow(r)
+    # location_ids = location_flow(r)
+    # PO_ids = PurchaseOrder_flow(r)
+    # SO_ids = SalesOrder_flow(r)
+    # subsi_ids = subsidiary_flow(r)
+    # TO_ids = transferOrder_flow(r)
+    # vendor_ids = vendor_flow(r)
+    # venBill_ids = vendorBill_flow(r)
+    # venCat_ids = vendorCategory_flow(r)
 
-    #location
-    #location_ids = location_flow(r)
-
-    #PurchaseOrder
-    #PO_ids = PurchaseOrder_flow(r)
-
-    #SalesOrder
-    #SO_ids = SalesOrder_flow(r)
-
-    #subsidiary
-    #subsi_ids = subsidiary_flow(r)
-
-    #transferOrder
-    #TO_ids = transferOrder_flow(r)
-
-    #vendor
-    #vendor_ids = vendor_flow(r)
-
-    #vendorBill
-    #venBill_ids = vendorBill_flow(r)
-
-    #vendorCategory
-    #venCat_ids = vendorCategory_flow(r)
-
-
-
+    # ----------------------------
+    # Dependencies
+    # ----------------------------
     start >> [
-#cust_ids
- #             , invCount_ids
-  #            ,acc_ids,
-   #           assem_ids,
-    #          dept_ids,
-     #         ICTO_ids,
-              InvItem_ids,
-      #        InvNum_ids,
-       #       invTrans_ids,
-              itemRec_ids,
-              invoice_ids,
-        #      itm_full_ids,
-         #     location_ids,
-          #    PO_ids,
-           #   SO_ids,
-            #  subsi_ids,
-             # TO_ids,
-              #vendor_ids,
-              #venBill_ids,
-              #venCat_ids
-              ]
+        # InvItem_ids,
+        # itemRec_ids,
+        invoice_ids,
+    ]
 
+
+# DAG object
 netsuite_dag = netsuite_pipeline()

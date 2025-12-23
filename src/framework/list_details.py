@@ -3,6 +3,8 @@ import aiohttp
 import logging
 import random
 from datetime import datetime, timezone
+from itertools import islice
+from typing import List, Tuple
 
 from utils.headers import get_netsuite_headers
 from utils.rate_limiter import global_throttle
@@ -12,56 +14,86 @@ from src.extractors.utils import (
     save_outputs_and_metadata,
 )
 
-# -----------------------------
-# Configurable constants
-# -----------------------------
+# ===========================
+# Config
+# ===========================
 MAX_CONCURRENCY = 5
-MAX_RETRIES = 6          # Increased from 3
-BASE_BACKOFF = 2         # Exponential backoff base
-THROTTLE_SLEEP = 0.15    # Steady-state delay per request
+MAX_RETRIES = 6
+BASE_BACKOFF = 1
+THROTTLE_SLEEP = 0.15
+ID_CHUNK_SIZE = 100
+
+HTTP_TIMEOUT = aiohttp.ClientTimeout(
+    total=300,
+    connect=10,
+    sock_read=300,
+)
+
+
+# ===========================
+# Helpers
+# ===========================
+def chunked(iterable, size):
+    it = iter(iterable)
+    while True:
+        chunk = list(islice(it, size))
+        if not chunk:
+            return
+        yield chunk
+
 
 
 async def fetch_with_retries(url, logger, session, semaphore):
     """
-    Fetch with retry, exponential backoff + jitter, limited concurrency.
-    Returns {} on permanent failure (IDs may be lost).
+    Fetch a URL with retries, capped linear backoff, and heartbeat-safe async sleeps.
     """
     async with semaphore:
         async with global_throttle:
             for attempt in range(1, MAX_RETRIES + 1):
                 try:
                     headers = get_netsuite_headers(url, method="GET")
-                    async with session.get(url, headers=headers) as resp:
+                    async with session.get(url, headers=headers, timeout=HTTP_TIMEOUT) as resp:
                         resp.raise_for_status()
                         data = await resp.json()
 
-                        # small steady-state sleep to prevent throttling
+                        # Small throttle to respect API limits
                         await asyncio.sleep(THROTTLE_SLEEP)
-
                         return validate_json(data, logger)
 
-                except Exception as e:
+                except Exception as exc:
                     if attempt == MAX_RETRIES:
-                        logger.error(f"All {MAX_RETRIES} retries failed for {url}: {e}")
-                        return {}  # permanent failure, ID may be lost
+                        logger.error(
+                            f"Permanent failure after {MAX_RETRIES} retries "
+                            f"for URL={url} :: {exc}"
+                        )
+                        return {}
 
-                    # exponential backoff + jitter
-                    wait = (BASE_BACKOFF ** attempt) + random.uniform(0, 1)
+                    # Heartbeat-safe linear backoff with jitter
+                    wait = min(BASE_BACKOFF * attempt + random.uniform(0, 1), 10)  # cap at 10s
                     logger.warning(
-                        f"Attempt {attempt}/{MAX_RETRIES} failed for {url}: {e}. "
-                        f"Retrying in {wait:.1f}s..."
+                        f"Retry {attempt}/{MAX_RETRIES} failed for {url}: {exc}. "
+                        f"Sleeping {wait:.1f}s"
                     )
-                    await asyncio.sleep(wait)
+
+                    # Split sleep into 1-second chunks for heartbeat safety
+                    remaining = wait
+                    while remaining > 0:
+                        sleep_time = min(1, remaining)
+                        await asyncio.sleep(sleep_time)
+                        remaining -= sleep_time
 
 
-async def fetch_all_details(url_template, resource_name, ids):
-    """
-    Shared async extractor for all detail endpoints.
-    Fetches multiple IDs concurrently, with pagination and retries.
-    """
+async def fetch_all_details(
+    url_template: str,
+    resource_name: str,
+    ids: List[int],
+) -> Tuple[str, list, List[int]]:
+
     logger = logging.getLogger(resource_name)
     now = datetime.now(timezone.utc)
-    outer_logs_dir, log_dir, _, logger = setup_extraction_environment(resource_name, now)
+    outer_logs_dir, log_dir, _, logger = setup_extraction_environment(
+        resource_name, now
+    )
 
     if not ids:
         logger.warning(f"{resource_name} ID list is empty")
@@ -70,12 +102,9 @@ async def fetch_all_details(url_template, resource_name, ids):
     semaphore = asyncio.Semaphore(MAX_CONCURRENCY)
     all_items = []
 
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(timeout=HTTP_TIMEOUT) as session:
 
         async def fetch_single(item_id):
-            """
-            Fetch a single ID, handling pagination and retries.
-            """
             next_url = url_template.replace("{id}", str(item_id))
             results = []
 
@@ -86,30 +115,33 @@ async def fetch_all_details(url_template, resource_name, ids):
                     results.extend(data["items"])
                 elif "id" in data:
                     results.append(data)
-                else:
-                    results.extend([])
 
-                logger.info(f"Total {len(results)} records fetched for URL: {next_url}")
+                logger.info(
+                    f"{resource_name} | ID={item_id} | records fetched={len(results)}"
+                )
 
-                # Pagination
                 next_links = [l["href"] for l in data.get("links", []) if l.get("rel") == "next"]
                 next_url = next_links[0] if next_links else None
 
+                await asyncio.sleep(0)  
+
             return results
 
-        # Prepare tasks for all IDs
-        tasks = [fetch_single(i) for i in ids]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+        for chunk_no, id_chunk in enumerate(chunked(ids, ID_CHUNK_SIZE), start=1):
+            logger.info(f"{resource_name} | Processing chunk {chunk_no} ({len(id_chunk)} IDs)")
+            tasks = [fetch_single(i) for i in id_chunk]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        for r in results:
-            if isinstance(r, Exception):
-                logger.error(f"Error in detail task: {r}")
-            else:
-                all_items.extend(r)
+            for r in results:
+                if isinstance(r, Exception):
+                    logger.error(f"Chunk fetch failed: {r}")
+                else:
+                    all_items.extend(r)
 
-    logger.info(f"Total {len(all_items)} {resource_name} detail records fetched")
+            await asyncio.sleep(0)
 
-    # Save outputs 
+    logger.info(f"{resource_name} | Total records fetched={len(all_items)}")
+
     await save_outputs_and_metadata(resource_name, all_items, log_dir, outer_logs_dir, now, None)
 
     return resource_name, all_items, ids
