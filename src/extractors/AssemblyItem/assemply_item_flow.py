@@ -8,7 +8,7 @@ def assembly_item_flow(redis_client):
         redis_client=redis_client,
         id_extractor=list_assembly_items_id,
         detail_extractor=list_assembly_items,
-        
+        batch_size=3000
     )
     aItem_decide(aItem_ids) >> [aItem_details, aItem_no]
     return aItem_ids

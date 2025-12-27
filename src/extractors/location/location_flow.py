@@ -8,7 +8,7 @@ def location_flow(redis_client):
         redis_client=redis_client,
         id_extractor=list_location_id,
         detail_extractor=list_location_details,
-        
+        batch_size=3000
     )
     location_decide(location_ids) >> [location_details, location_no]
     return location_ids

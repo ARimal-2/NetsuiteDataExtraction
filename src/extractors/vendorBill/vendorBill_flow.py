@@ -9,7 +9,7 @@ def vendorBill_flow(redis_client):
         redis_client=redis_client,
         id_extractor=list_vendorBill_id,
         detail_extractor=list_vendorBill_details,
-        
+        batch_size=3000
     )
     vendorBill_decide(vendorBill_ids) >> [vendorBill_details, vendorBill_no]
     return vendorBill_ids

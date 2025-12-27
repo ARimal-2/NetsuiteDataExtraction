@@ -8,7 +8,7 @@ def itemReceipt_flow(redis_client):
         redis_client=redis_client,
         id_extractor=list_itemReceipt_id,
         detail_extractor=list_itemReceipt_details,
-        
+        batch_size=3000
     )
     itemReceipt_decide(itemReceipt_ids) >> [itemReceipt_details, itemReceipt_no]
     return itemReceipt_ids

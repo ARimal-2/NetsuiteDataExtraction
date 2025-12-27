@@ -8,7 +8,7 @@ def InventoryItem_flow(redis_client):
         redis_client=redis_client,
         id_extractor=list_inventory_item_id,
         detail_extractor=list_inventory_items,
-        
+        batch_size=3000
     )
     invenItem_decide(invenItem_ids) >> [invenItem_details, invenItem_no]
     return invenItem_ids

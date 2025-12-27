@@ -8,7 +8,7 @@ def interCompanyTransferOrder_flow(redis_client):
         redis_client=redis_client,
         id_extractor=list_intercompanyTransferOrder_id,
         detail_extractor=list_intercompanyTransferOrder_details,
-        
+        batch_size=3000
     )
     ICTO_decide(ICTO_ids) >> [ICTO_details, ICTO_no]
     return ICTO_ids

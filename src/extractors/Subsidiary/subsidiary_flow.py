@@ -9,7 +9,7 @@ def subsidiary_flow(redis_client):
         redis_client=redis_client,
         id_extractor=list_subsidiary_id,
         detail_extractor=list_subsidiary_details,
-        
+        batch_size=3000
     )
     subsidiary_decide(subsidiary_ids) >> [subsidiary_details, subsidiary_no]
     return subsidiary_ids

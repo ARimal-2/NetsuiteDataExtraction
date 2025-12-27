@@ -8,7 +8,7 @@ def inventoryTransfer_flow(redis_client):
         redis_client=redis_client,
         id_extractor=list_inventory_transfer_id,
         detail_extractor=list_inventory_transfer_details,
-        
+        batch_size=3000
     )
     ivenTrans_decide(ivenTrans_ids) >> [ivenTrans_details, ivenTrans_no]
     return ivenTrans_ids

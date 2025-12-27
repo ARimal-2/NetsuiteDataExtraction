@@ -9,7 +9,7 @@ def vendorCategory_flow(redis_client):
         redis_client=redis_client,
         id_extractor=list_vendorCategory_id,
         detail_extractor=list_vendorCategory_details,
-        
+        batch_size=3000
     )
     vendorCategory_decide(vendorCategory_ids) >> [vendorCategory_details, vendorCategory_no]
     return vendorCategory_ids

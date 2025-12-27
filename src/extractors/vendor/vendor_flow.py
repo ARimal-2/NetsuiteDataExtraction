@@ -9,7 +9,7 @@ def vendor_flow(redis_client):
         redis_client=redis_client,
         id_extractor=list_vendor_id,
         detail_extractor=list_vendor_details,
-        
+        batch_size=3000
     )
     vendor_decide(vendor_ids) >> [vendor_details, vendor_no]
     return vendor_ids

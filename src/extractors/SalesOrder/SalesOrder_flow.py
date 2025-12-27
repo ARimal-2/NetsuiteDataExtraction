@@ -9,7 +9,7 @@ def SalesOrder_flow(redis_client):
         redis_client=redis_client,
         id_extractor=list_sales_order_ids,
         detail_extractor=list_sales_order,
-        
+        batch_size=3000
     )
     SO_decide(SO_ids) >> [SO_details, SO_no]
     return SO_ids

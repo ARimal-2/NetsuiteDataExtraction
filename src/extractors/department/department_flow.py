@@ -8,7 +8,7 @@ def department_flow(redis_client):
         redis_client=redis_client,
         id_extractor=list_department_id,
         detail_extractor=list_department_details,
-        
+        batch_size=3000
     )
     dept_decide(dept_ids) >> [dept_details, dept_no]
     return dept_ids

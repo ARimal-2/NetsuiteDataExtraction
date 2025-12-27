@@ -8,7 +8,7 @@ def itemFulfillment_flow(redis_client):
         redis_client=redis_client,
         id_extractor=list_item_fulfillment_id,
         detail_extractor=list_item_fulfillment_details,
-        
+        batch_size=3000
     )
     itmFul_decide(itmFul_ids) >> [itmFul_details, itmFul_no]
     return itmFul_ids

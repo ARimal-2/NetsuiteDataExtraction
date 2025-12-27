@@ -8,6 +8,7 @@ def account_flow(redis_client):
         redis_client=redis_client,
         id_extractor=list_account_id,
         detail_extractor=list_account_details,
+        batch_size=3000
         
     )
     acc_decide(acc_ids) >> [acc_details, acc_no]

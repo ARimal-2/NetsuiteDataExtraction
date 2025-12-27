@@ -8,7 +8,7 @@ def customer_flow(redis_client):
         redis_client=redis_client,
         id_extractor=list_customers_ids,
         detail_extractor=customers_list,
-       
+        batch_size=3000
     )
     cust_decide(cust_ids) >> [cust_details, cust_no]
     return cust_ids

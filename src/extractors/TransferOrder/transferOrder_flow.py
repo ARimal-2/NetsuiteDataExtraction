@@ -10,7 +10,7 @@ def transferOrder_flow(redis_client):
         redis_client=redis_client,
         id_extractor=list_transferOrder_id,
         detail_extractor=list_transferOrder_details,
-        
+        batch_size=3000
     )
     transferOrder_decide(transferOrder_ids) >> [transferOrder_details, transferOrder_no]
     return transferOrder_ids

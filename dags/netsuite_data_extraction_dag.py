@@ -34,7 +34,7 @@ default_args = {
     "owner": "airflow",
     "retries": 2,
     "retry_delay": timedelta(minutes=3),
-    "execution_timeout": timedelta(hours=2)
+    "execution_timeout": timedelta(hours=8)
 }
 
 
@@ -73,16 +73,16 @@ def netsuite_pipeline():
     # invTrans_ids = inventoryTransfer_flow(r)
 
     # itemRec_ids = itemReceipt_flow(r)
-    #invoice_ids = invoice_flow(r)
+    invoice_ids = invoice_flow(r)
 
     # itm_full_ids = itemFulfillment_flow(r)
     # location_ids = location_flow(r)
-    # PO_ids = PurchaseOrder_flow(r)
+    PO_ids = PurchaseOrder_flow(r)
     SO_ids = SalesOrder_flow(r)
     # subsi_ids = subsidiary_flow(r)
     # TO_ids = transferOrder_flow(r)
     # vendor_ids = vendor_flow(r)
-    # venBill_ids = vendorBill_flow(r)
+    venBill_ids = vendorBill_flow(r)
     # venCat_ids = vendorCategory_flow(r)
 
     # ----------------------------
@@ -91,7 +91,12 @@ def netsuite_pipeline():
     start >> [
         # InvItem_ids,
         # itemRec_ids,
-        SO_ids,
+        # SO_ids,
+        # cust_ids,
+        invoice_ids,
+        venBill_ids,
+        PO_ids,
+        SO_ids
     ]
 
 
