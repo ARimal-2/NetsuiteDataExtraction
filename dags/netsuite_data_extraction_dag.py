@@ -69,20 +69,20 @@ def netsuite_pipeline():
 
     # InvItem_ids = InventoryItem_flow(r)
 
-    # InvNum_ids = inventoryNumber_flow(r)
+    InvNum_ids = inventoryNumber_flow(r)
     # invTrans_ids = inventoryTransfer_flow(r)
 
-    # itemRec_ids = itemReceipt_flow(r)
-    invoice_ids = invoice_flow(r)
+    itemRec_ids = itemReceipt_flow(r)
+    # invoice_ids = invoice_flow(r)
 
-    # itm_full_ids = itemFulfillment_flow(r)
+    itm_full_ids = itemFulfillment_flow(r)
     # location_ids = location_flow(r)
-    PO_ids = PurchaseOrder_flow(r)
-    SO_ids = SalesOrder_flow(r)
+    # PO_ids = PurchaseOrder_flow(r)
+    # SO_ids = SalesOrder_flow(r)
     # subsi_ids = subsidiary_flow(r)
-    # TO_ids = transferOrder_flow(r)
+    TO_ids = transferOrder_flow(r)
     # vendor_ids = vendor_flow(r)
-    venBill_ids = vendorBill_flow(r)
+    # venBill_ids = vendorBill_flow(r)
     # venCat_ids = vendorCategory_flow(r)
 
     # ----------------------------
@@ -90,13 +90,16 @@ def netsuite_pipeline():
     # ----------------------------
     start >> [
         # InvItem_ids,
-        # itemRec_ids,
+        itemRec_ids,
         # SO_ids,
         # cust_ids,
-        invoice_ids,
-        venBill_ids,
-        PO_ids,
-        SO_ids
+        # invoice_ids,
+        # venBill_ids,
+        # PO_ids,
+        # SO_ids,
+        itm_full_ids,
+        TO_ids,
+        InvNum_ids
     ]
 
 
