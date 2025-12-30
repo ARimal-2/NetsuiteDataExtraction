@@ -48,7 +48,7 @@ def generate_flow(
     # -------------------------------------------------
     @task(
         task_id=f"fetch_{resource_key}_ids",
-        execution_timeout=timedelta(minutes=30),
+        execution_timeout=timedelta(hours=5),
         retries=2,
     )
     def fetch_ids_task():
@@ -79,7 +79,7 @@ def generate_flow(
     # -------------------------------------------------
     @task(
         task_id=f"fetch_{resource_key}_details",
-        execution_timeout=timedelta(minutes=120),
+        execution_timeout=timedelta(days=2),
         retries=3,
         retry_delay=timedelta(minutes=2),
     )
