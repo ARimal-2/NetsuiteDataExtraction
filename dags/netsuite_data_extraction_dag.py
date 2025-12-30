@@ -81,7 +81,7 @@ def netsuite_pipeline():
     # SO_ids = SalesOrder_flow(r)
     # subsi_ids = subsidiary_flow(r)
     TO_ids = transferOrder_flow(r)
-    # vendor_ids = vendor_flow(r)
+    vendor_ids = vendor_flow(r)
     # venBill_ids = vendorBill_flow(r)
     # venCat_ids = vendorCategory_flow(r)
 
@@ -99,7 +99,8 @@ def netsuite_pipeline():
         # SO_ids,
         itm_full_ids,
         TO_ids,
-        InvNum_ids
+        InvNum_ids,
+        vendor_ids
     ]
 
 
