@@ -80,7 +80,7 @@ def generate_flow(
     # -------------------------------------------------
     @task(
         task_id=f"fetch_{resource_key}_details",
-        execution_timeout=timedelta(minutes=60),
+        execution_timeout=timedelta(minutes=120),
         retries=3,
         retry_delay=timedelta(minutes=2),
     )
