@@ -37,7 +37,6 @@ default_args = {
     "execution_timeout": timedelta(hours=8)
 }
 
-
 # ------------------------------------------------------------
 # DAG definition
 # ------------------------------------------------------------
@@ -52,7 +51,6 @@ default_args = {
     tags=["netsuite", "etl"],
 )
 def netsuite_pipeline():
-
     # Redis connection (shared by flows)
     r = redis.Redis(host="redis", port=6379, db=0)
 

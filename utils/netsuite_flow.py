@@ -74,7 +74,6 @@ def generate_flow(
             return len(id_list)
 
         return run_async(_run())
-
     # -------------------------------------------------
     # PROCESS ONE BATCH ONLY
     # -------------------------------------------------
