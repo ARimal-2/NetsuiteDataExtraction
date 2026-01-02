@@ -1,11 +1,12 @@
 .env
 /logs/extraction
-/logs/dag_id=netsuite_customer_payment_dag
-/logs/dag_id=netsuite_custmer_extraction
+/logs/dag_id=netsuite_extraction_dag
+/logs/dag_id=netsuite_pipeline
 /logs/gag_processor
 logs/extraction
 logs/ingestion
-logs
+logs/scheduler
+# logs
 logs/dag_processor_manager
 /netsuite_venv
 *.pyc

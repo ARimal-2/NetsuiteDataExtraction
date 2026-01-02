@@ -34,7 +34,6 @@ from src.s3uploader.connect import connect_to_cos
 
 # logs/ingestionlogger.py
 def setup_logging_for_url(resource_name):
-
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
     outer_logs_dir = os.path.join("logs", "ingestion", resource_name)

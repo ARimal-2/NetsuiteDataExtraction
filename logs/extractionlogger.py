@@ -177,9 +177,9 @@ def load_last_extraction_time(outer_logs_dir, resource_name):
             if last_extracted is None:
                 logging.info("No last extraction date found — treating as first load.")
                 return None  # First load
-            
             return last_extracted
         
+
         except Exception as e:
             logging.warning(f"Could not read metadata file: {e}")
             return None  # First load
