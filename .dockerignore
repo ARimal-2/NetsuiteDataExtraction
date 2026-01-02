@@ -1,16 +1,24 @@
-netsuite_venv/
-logs/**
-__pycache__/
+# Python
+__pycache__
 *.pyc
-.git/
-.gitignore
-.env
-.vscode/
-*.egg-info/
-dist/
-build/
-.pytest_cache/
-.coverage
-htmlcov/
-.DS_Store
+*.pyo
+*.pyd
+*.env
+.venv
+netsuite_venv
+
+# Logs
+logs
 *.log
+
+# Git and other metadata
+.git
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose.override.yml
+
+# IDE files
+.vscode
+.idea
