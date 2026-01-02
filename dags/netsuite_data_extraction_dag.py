@@ -34,7 +34,7 @@ default_args = {
     "owner": "airflow",
     "retries": 2,
     "retry_delay": timedelta(minutes=3),
-    "execution_timeout": timedelta(hours=8)
+    "execution_timeout": timedelta(hours=22)
 }
 
 # ------------------------------------------------------------
