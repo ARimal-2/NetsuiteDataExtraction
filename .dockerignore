@@ -1,0 +1,16 @@
+netsuite_venv/
+logs/**
+__pycache__/
+*.pyc
+.git/
+.gitignore
+.env
+.vscode/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+.DS_Store
+*.log
