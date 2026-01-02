@@ -29,16 +29,16 @@ jobs:
             set -euo pipefail
             cd /root/netsuiteapi/NetsuiteDataExtraction
             git config --global --add safe.directory /root/netsuiteapi/NetsuiteDataExtraction
-            # Pull latest code from Git
             git reset --hard
             git clean -fd
             git fetch --all
             git checkout main
             git pull origin main
 
-            # Build and restart containers
+            # Clean up logs and cache before build
+            rm -rf logs __pycache__ netsuite_venv
+
             docker-compose build --no-cache
             docker-compose up -d
 
-            # Optional: Verify container status
-            docker ps
+            docker ps 
