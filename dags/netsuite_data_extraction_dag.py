@@ -34,7 +34,7 @@ default_args = {
     "owner": "airflow",
     "retries": 2,
     "retry_delay": timedelta(minutes=3),
-    "execution_timeout": timedelta(hours=22)
+    "execution_timeout": timedelta(hours=22),
 }
 
 # ------------------------------------------------------------
@@ -43,11 +43,11 @@ default_args = {
 @dag(
     dag_id="netsuite_pipeline",
     start_date=datetime(2024, 1, 1),
-    schedule="@weekly",     
+    schedule="@weekly",
     default_args=default_args,
     catchup=False,
     is_paused_upon_creation=False,
-    max_active_runs=1,         
+    max_active_runs=1,
     tags=["netsuite", "etl"],
 )
 def netsuite_pipeline():
@@ -56,49 +56,51 @@ def netsuite_pipeline():
 
     start = EmptyOperator(task_id="start")
 
-  
-
-    # cust_ids = customer_flow(r)
-    # invCount_ids = inventory_count_flow(r)
-    # acc_ids = account_flow(r)
-    # assem_ids = assembly_item_flow(r)
-    # dept_ids = department_flow(r)
-    # ICTO_ids = interCompanyTransferOrder_flow(r)
-
-    # InvItem_ids = InventoryItem_flow(r)
-
+    cust_ids = customer_flow(r)
+    invCount_ids = inventory_count_flow(r)
+    acc_ids = account_flow(r)
+    assem_ids = assembly_item_flow(r)
+    dept_ids = department_flow(r)
+    ICTO_ids = interCompanyTransferOrder_flow(r)
+    InvItem_ids = InventoryItem_flow(r)
     InvNum_ids = inventoryNumber_flow(r)
-    # invTrans_ids = inventoryTransfer_flow(r)
-
+    invTrans_ids = inventoryTransfer_flow(r)
     itemRec_ids = itemReceipt_flow(r)
-    # invoice_ids = invoice_flow(r)
-
+    invoice_ids = invoice_flow(r)
     itm_full_ids = itemFulfillment_flow(r)
-    # location_ids = location_flow(r)
-    # PO_ids = PurchaseOrder_flow(r)
-    # SO_ids = SalesOrder_flow(r)
-    # subsi_ids = subsidiary_flow(r)
+    location_ids = location_flow(r)
+    PO_ids = PurchaseOrder_flow(r)
+    SO_ids = SalesOrder_flow(r)
+    subsi_ids = subsidiary_flow(r)
     TO_ids = transferOrder_flow(r)
     vendor_ids = vendor_flow(r)
-    # venBill_ids = vendorBill_flow(r)
-    # venCat_ids = vendorCategory_flow(r)
+    venBill_ids = vendorBill_flow(r)
+    venCat_ids = vendorCategory_flow(r)
 
     # ----------------------------
     # Dependencies
     # ----------------------------
     start >> [
-        # InvItem_ids,
-        itemRec_ids,
-        # SO_ids,
-        # cust_ids,
-        # invoice_ids,
-        # venBill_ids,
-        # PO_ids,
-        # SO_ids,
-        itm_full_ids,
-        TO_ids,
+        cust_ids,
+        invCount_ids,
+        acc_ids,
+        assem_ids,
+        dept_ids,
+        ICTO_ids,
+        InvItem_ids,
         InvNum_ids,
-        vendor_ids
+        invTrans_ids,
+        itemRec_ids,
+        invoice_ids,
+        itm_full_ids,
+        location_ids,
+        PO_ids,
+        SO_ids,
+        subsi_ids,
+        TO_ids,
+        vendor_ids,
+        venBill_ids,
+        venCat_ids,
     ]
 
 

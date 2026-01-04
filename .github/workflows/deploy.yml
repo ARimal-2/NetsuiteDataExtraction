@@ -35,8 +35,6 @@ jobs:
             git checkout main
             git pull origin main
 
-            # Clean up logs and cache before build
-            rm -rf logs __pycache__ netsuite_venv
 
             docker-compose build --no-cache
             docker-compose up -d
