@@ -63,11 +63,14 @@ def generate_flow(resource_key: str, redis_client, id_extractor, detail_extracto
             while True:
                 batch = []
 
-                for _ in range(batch_size):
+                for i in range(batch_size):
                     raw_id = redis_client.lpop(redis_queue)
                     if raw_id is None:
                         break
                     batch.append(raw_id.decode("utf-8"))
+                    # Yield every 100 IDs to keep heartbeat safe
+                    if (i + 1) % 100 == 0:
+                        await asyncio.sleep(0)
 
                 if not batch:
                     logger.info(f"No more IDs left in Redis queue for {resource_key}")
