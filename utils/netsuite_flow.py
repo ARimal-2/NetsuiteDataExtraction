@@ -2,8 +2,7 @@ from airflow.decorators import task
 from airflow.operators.empty import EmptyOperator
 import asyncio
 import logging
-from datetime import timedelta
-
+from datetime import timedelta, timezone
 from src.framework.safe_upload import safe_upload
 
 logger = logging.getLogger(__name__)
@@ -29,7 +28,7 @@ def generate_flow(resource_key: str, redis_client, id_extractor, detail_extracto
     # Fetch IDs task
  
     @task(task_id=f"fetch_{resource_key}_ids",
-        execution_timeout=timedelta(minutes=30),
+        execution_timeout=timedelta(hours=22),
         retries=2,
         retry_delay=timedelta(minutes=2))
     def fetch_ids_task():
@@ -55,12 +54,10 @@ def generate_flow(resource_key: str, redis_client, id_extractor, detail_extracto
         return run_async(run_extractor())
 
     # Fetch details task
-    @task(
-        task_id=f"fetch_{resource_key}_details",
-        execution_timeout=timedelta(minutes=60),
-        retries=3,
-        retry_delay=timedelta(minutes=2),
-    )
+    @task(task_id=f"fetch_{resource_key}_details",
+        execution_timeout=timedelta(days=2),
+        retries=2,
+        retry_delay=timedelta(minutes=2))
     def fetch_details_task():
         async def process_batches():
             while True:
